@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3. Bijak Mengurus Stres - Pengembaraan 3D CASPER</title>
+    <!-- Tailwind CSS & Three.js CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050204;
+            color: #f1f5f9;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        #game-container {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            outline: none;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+        .lava-panel {
+            background: rgba(10, 8, 16, 0.88);
+            border: 1px solid rgba(251, 146, 60, 0.45);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85), inset 0 0 22px rgba(234, 88, 12, 0.16);
+            backdrop-filter: blur(8px);
+        }
+        .casper-glow {
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.55);
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(249, 115, 22, 0.6);
+            border-radius: 9999px;
+        }
+        .dpad-btn {
+            background: rgba(15, 23, 42, 0.82);
+            border: 1.5px solid rgba(56, 189, 248, 0.45);
+            color: #e0f2fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            border-radius: 14px;
+            transition: transform 0.08s, background 0.1s;
+            cursor: pointer;
+        }
+        .dpad-btn:active, .dpad-btn.active {
+            background: rgba(14, 165, 233, 0.55);
+            transform: scale(0.93);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas / 2.5D Fallback Container -->
+    <div id="game-container" tabindex="0"></div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-black/95 via-red-950/90 to-black/98 backdrop-blur-md p-3 sm:p-5 overflow-y-auto">
+        <div class="max-w-2xl w-full lava-panel rounded-3xl p-5 sm:p-7 text-center my-auto">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 text-xs font-bold tracking-wider uppercase mb-3">
+                <span>🔫 Pengembaraan Aksi 3D Gaya Contra • Modul Kesihatan Mental</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-red-500 mb-2.5 tracking-tight">
+                3. BIJAK MENGURUS STRES
+            </h1>
+            <p class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4">
+                Pilih komando wira anda bersenjatakan <span class="text-sky-300 font-bold">Meriam Tenaga</span> untuk menakluki kesemua <span class="text-amber-300 font-bold">6 Pintu Cabaran Pengurusan Stres</span>!
+            </p>
+
+            <!-- CHARACTER GENDER SELECTION -->
+            <div class="mb-4">
+                <div class="text-xs font-extrabold uppercase tracking-wider text-sky-300 mb-2">👤 Pilih Watak Pemain:</div>
+                <div class="grid grid-cols-2 gap-3 max-w-md mx-auto">
+                    <button id="btn-select-male" type="button" class="p-3 rounded-2xl bg-sky-500/25 border-2 border-sky-400 text-left flex items-center gap-3 transition cursor-pointer shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+                        <div class="w-11 h-11 rounded-xl bg-sky-500/30 border border-sky-300/60 flex items-center justify-center text-2xl shrink-0">👦</div>
+                        <div>
+                            <div class="font-black text-sky-200 text-xs sm:text-sm">Wira Lelaki</div>
+                            <div class="text-[11px] text-slate-300">Jaket Pengembara Biru</div>
+                        </div>
+                    </button>
+                    <button id="btn-select-female" type="button" class="p-3 rounded-2xl bg-slate-900/85 border-2 border-slate-700 hover:border-pink-400/70 text-left flex items-center gap-3 transition cursor-pointer">
+                        <div class="w-11 h-11 rounded-xl bg-pink-500/25 border border-pink-300/50 flex items-center justify-center text-2xl shrink-0">👧</div>
+                        <div>
+                            <div class="font-black text-pink-200 text-xs sm:text-sm">Wira Perempuan</div>
+                            <div class="text-[11px] text-slate-300">Jaket Pengembara Merah Jambu</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-left mb-4 text-xs">
+                <div class="bg-slate-900/90 border border-red-500/35 rounded-2xl p-2.5">
+                    <div class="font-bold text-red-400 mb-0.5">💓 Pintu 1: Tanda-tanda Stres</div>
+                    <p class="text-slate-400 text-[11px]">Kenali Eustres vs Distres, tindak balas badan, dan kumpul 5 Kristal Kesedaran.</p>
+                </div>
+                <div class="bg-slate-900/90 border border-orange-500/35 rounded-2xl p-2.5">
+                    <div class="font-bold text-orange-400 mb-0.5">🌋 Pintu 2: Punca-punca Stres</div>
+                    <p class="text-slate-400 text-[11px]">Tembak Raksasa Tekanan untuk atasi beban tugasan, peperiksaan & konflik.</p>
+                </div>
+                <div class="bg-slate-900/90 border border-emerald-500/35 rounded-2xl p-2.5">
+                    <div class="font-bold text-emerald-300 mb-0.5">🌬️ Pintu 3: Pernafasan 4-4-4</div>
+                    <p class="text-slate-400 text-[11px]">Lompat platform tenang mengikut ritma Tarik (4s) - Tahan (4s) - Hembus (4s).</p>
+                </div>
+                <div class="bg-slate-900/90 border border-purple-500/35 rounded-2xl p-2.5">
+                    <div class="font-bold text-purple-400 mb-0.5">🧭 Pintu 4: Penyelesaian Masalah</div>
+                    <p class="text-slate-400 text-[11px]">Ambil Kunci & selesaikan 4 langkah penyelesaian masalah secara sistematik.</p>
+                </div>
+                <div class="bg-slate-900/90 border border-cyan-500/35 rounded-2xl p-2.5">
+                    <div class="font-bold text-cyan-400 mb-0.5">📚 Pintu 5: Pustaka Ilmu</div>
+                    <p class="text-slate-400 text-[11px]">Kaji 6 bab nota psikologi, teknik relaksasi, gaya hidup sihat & talian bantuan.</p>
+                </div>
+                <div class="bg-slate-900/90 border border-amber-500/35 rounded-2xl p-2.5">
+                    <div class="font-bold text-amber-400 mb-0.5">✍️ Pintu 6: Refleksi Diri</div>
+                    <p class="text-slate-400 text-[11px]">Catat jurnal pelan tindakan peribadi dan tebus Permata Kebijaksanaan.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-300 bg-black/50 rounded-2xl p-2.5 mb-5 border border-slate-800">
+                <span class="px-2 py-0.5 bg-slate-800 rounded-lg font-mono text-sky-300">W A S D / Panah</span> Gerak
+                <span class="px-2 py-0.5 bg-slate-800 rounded-lg font-mono text-amber-300">SPACE</span> Lompat
+                <span class="px-2 py-0.5 bg-slate-800 rounded-lg font-mono text-rose-300">KLIK / F</span> Tembak
+                <span class="px-2 py-0.5 bg-slate-800 rounded-lg font-mono text-emerald-300">E</span> Interaksi
+                <span class="px-2 py-0.5 bg-slate-800 rounded-lg font-mono text-cyan-300">Pad Skrin</span> Mobile
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button id="btn-lobby-audio" type="button" class="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-sky-400/50 text-sky-300 font-bold text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-2">
+                    <span id="lobby-audio-icon">🔊</span>
+                    <span id="lobby-audio-label">Muzik Tema Rancak: AKTIF</span>
+                </button>
+                <button id="btn-start-game" type="button" class="w-full sm:w-auto px-9 py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base tracking-wide transition transform hover:scale-105 active:scale-95 casper-glow cursor-pointer">
+                    🧭 MULA MENGEMBARA 3D
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP HUD (PLAYER STATUS, PORTAL PROGRESS, & CONTROLS) -->
+    <div id="hud-top" class="hidden fixed top-0 left-0 right-0 z-20 p-2 sm:p-3 pointer-events-none flex flex-wrap items-start justify-between gap-2">
+        <div class="lava-panel rounded-2xl p-2.5 pointer-events-auto flex items-center gap-2.5">
+            <div id="hud-avatar-icon" class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/50 flex items-center justify-center text-lg">
+                👦
+            </div>
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span id="hud-player-name" class="font-extrabold text-sky-300 text-xs">WIRA LELAKI</span>
+                    <span id="zone-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40">Hab Lembah Tekanan</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] text-slate-400">Ketenangan:</span>
+                    <div class="w-20 sm:w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                        <div id="calm-bar" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                    <span id="calm-text" class="text-[10px] font-bold text-emerald-300">100%</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-1">
+                    <span class="text-[10px] text-slate-400">Senjata:</span>
+                    <span id="weapon-badge" class="text-[10px] font-black px-2 py-0.5 rounded-md bg-sky-500/25 text-sky-200 border border-sky-400/50">🔫 [N] NORMAL</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lava-panel rounded-2xl p-1.5 sm:px-2.5 pointer-events-auto flex items-center gap-1 flex-wrap">
+            <span id="pill-1" class="px-2 py-0.5 rounded-xl text-[10px] font-bold bg-slate-900 border border-red-500/40 text-red-300">1. Tanda</span>
+            <span id="pill-2" class="px-2 py-0.5 rounded-xl text-[10px] font-bold bg-slate-900 border border-orange-500/40 text-orange-300">2. Punca</span>
+            <span id="pill-3" class="px-2 py-0.5 rounded-xl text-[10px] font-bold bg-slate-900 border border-emerald-500/40 text-emerald-300">3. Nafas</span>
+            <span id="pill-4" class="px-2 py-0.5 rounded-xl text-[10px] font-bold bg-slate-900 border border-purple-500/40 text-purple-300">4. Selesai</span>
+            <span id="pill-5" class="px-2 py-0.5 rounded-xl text-[10px] font-bold bg-slate-900 border border-cyan-500/40 text-cyan-300">5. Ilmu</span>
+            <span id="pill-6" class="px-2 py-0.5 rounded-xl text-[10px] font-bold bg-slate-900 border border-amber-500/40 text-amber-300">6. Refleksi</span>
+        </div>
+
+        <div class="flex items-center gap-1 pointer-events-auto flex-wrap">
+            <button id="btn-toggle-pad" type="button" class="px-2.5 py-1.5 rounded-xl lava-panel text-xs font-bold text-cyan-300 cursor-pointer" title="Pad Skrin">🎮</button>
+            <button id="btn-codex" type="button" class="px-2.5 py-1.5 rounded-xl lava-panel text-xs font-bold text-amber-300 cursor-pointer" title="Kitab Ilmu">📜</button>
+            <button id="btn-audio" type="button" class="px-2.5 py-1.5 rounded-xl lava-panel text-xs font-bold text-sky-300 cursor-pointer"><span id="audio-icon">🔊</span></button>
+            <button id="btn-exit-stage" type="button" class="hidden px-2.5 py-1.5 rounded-xl bg-rose-950/90 border border-rose-500/50 text-xs font-bold text-rose-200 cursor-pointer">🚪 Keluar</button>
+        </div>
+    </div>
+
+    <!-- PERSISTENT SIDE INFO HUD PANEL (POSITIONED RIGHT TO AVOID OVERLAP WITH TOP-LEFT HUB CARD) -->
+    <div id="side-info-panel" class="hidden fixed top-28 sm:top-20 right-3 z-20 w-72 sm:w-88 max-w-[calc(100vw-1.5rem)] lava-panel rounded-2xl p-3.5 sm:p-4 shadow-2xl pointer-events-auto transition-all border-2 border-amber-400/45">
+        <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-700/80">
+            <span id="side-panel-title" class="text-sm sm:text-base font-black text-amber-300 leading-tight">📚 Nota Stres Semasa</span>
+            <button id="btn-side-read-more" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/25 hover:bg-sky-500/40 border border-sky-400/50 text-[11px] font-extrabold text-sky-200 shrink-0 cursor-pointer">
+                📖 Nota Penuh
+            </button>
+        </div>
+        <p id="side-panel-desc" class="text-xs sm:text-sm text-slate-100 leading-relaxed font-medium">
+            Terokai pintu cabaran untuk melihat maklumat psikologi di sini secara langsung semasa anda mengawal watak.
+        </p>
+
+        <!-- BREATHING VISUAL INDICATOR (STAGE 3) -->
+        <div id="breath-visual-box" class="hidden mt-3 p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-400/40">
+            <div class="flex items-center justify-between text-xs font-black text-emerald-300 mb-1.5">
+                <span id="breath-phase-big">🌬️ FASA 1: TARIK NAFAS (4s)</span>
+                <span id="breath-sec-big">1s / 4s</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-emerald-500/30">
+                <div id="breath-progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-sky-400 transition-all duration-100" style="width: 25%"></div>
+            </div>
+        </div>
+
+        <div id="side-submeter-wrap" class="mt-2.5 pt-2.5 border-t border-slate-700/80 flex items-center justify-between text-xs sm:text-sm">
+            <span id="side-sub-label" class="font-bold text-sky-300">Kemajuan:</span>
+            <span id="side-sub-val" class="font-black text-amber-300 text-sm sm:text-base">0 / 6</span>
+        </div>
+    </div>
+
+    <!-- FLOATING TOAST NOTIFICATIONS (LARGE & HIGH CONTRAST) -->
+    <div id="toast-knowledge" class="hidden fixed bottom-32 sm:bottom-8 left-1/2 -translate-x-1/2 z-30 w-[94%] max-w-xl pointer-events-none">
+        <div class="bg-slate-950/95 border-2 border-sky-400 rounded-2xl p-4 shadow-[0_0_30px_rgba(56,189,248,0.45)] flex items-start gap-3">
+            <div id="toast-icon" class="text-2xl sm:text-3xl shrink-0">💡</div>
+            <div>
+                <div id="toast-title" class="text-sm sm:text-base font-black text-sky-300">Info Stres</div>
+                <div id="toast-body" class="text-xs sm:text-sm text-slate-100 mt-1 leading-relaxed font-medium">Penerangan ringkas.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIRTUAL TOUCH PAD -->
+    <div id="virtual-pad" class="hidden fixed bottom-3 left-3 right-3 z-30 pointer-events-none flex items-end justify-between">
+        <div class="pointer-events-auto grid grid-cols-3 gap-1 w-32 h-32">
+            <div></div>
+            <button type="button" data-dir="up" class="dpad-btn text-base">▲</button>
+            <div></div>
+            <button type="button" data-dir="left" class="dpad-btn text-base">◀</button>
+            <div id="dpad-center-icon" class="rounded-xl bg-slate-950/60 border border-slate-700/60 flex items-center justify-center text-xs text-sky-400 font-bold">👦</div>
+            <button type="button" data-dir="right" class="dpad-btn text-base">▶</button>
+            <div></div>
+            <button type="button" data-dir="down" class="dpad-btn text-base">▼</button>
+            <div></div>
+        </div>
+
+        <div class="pointer-events-auto flex flex-col gap-1.5">
+            <button id="btn-pad-interact" type="button" class="px-3 py-2 rounded-xl bg-amber-500/90 active:bg-amber-400 border border-amber-200 text-slate-950 font-extrabold text-[11px] shadow-lg cursor-pointer">
+                📜 BACA / TULIS (E)
+            </button>
+            <div class="flex gap-2 justify-end">
+                <button id="btn-pad-shoot" type="button" class="w-12 h-12 rounded-xl bg-rose-600/90 active:bg-rose-500 border border-rose-300 text-white font-extrabold text-[10px] shadow-lg flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-sm">⚡</span>
+                    <span>TEMBAK</span>
+                </button>
+                <button id="btn-pad-jump" type="button" class="w-12 h-12 rounded-xl bg-sky-600/90 active:bg-sky-500 border border-sky-300 text-white font-extrabold text-[10px] shadow-lg flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-sm">⬆️</span>
+                    <span>LOMPAT</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAGE INTRO MODAL (LARGE TEXT) -->
+    <div id="stage-intro-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+        <div class="max-w-xl w-full lava-panel rounded-3xl p-6 text-center border-2 border-amber-400/50">
+            <div id="modal-stage-tag" class="inline-block px-3.5 py-1 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-2">PINTU 1</div>
+            <div id="modal-stage-emoji" class="text-4xl mb-2">💓</div>
+            <h2 id="modal-stage-title" class="text-xl sm:text-2xl font-black text-white mb-3">Tanda-tanda Stres</h2>
+
+            <div class="bg-slate-900/95 border border-slate-700 rounded-2xl p-4 text-left mb-3">
+                <div class="font-extrabold text-sky-300 text-xs sm:text-sm uppercase tracking-wider mb-1">📖 Ilmu Psikologi & Pengurusan Stres:</div>
+                <p id="modal-stage-lesson" class="text-xs sm:text-sm text-slate-100 leading-relaxed"></p>
+            </div>
+
+            <div class="bg-orange-950/50 border border-orange-500/40 rounded-2xl p-4 text-left mb-5">
+                <div class="font-extrabold text-orange-300 text-xs sm:text-sm uppercase tracking-wider mb-1">🎮 Misi CASPER:</div>
+                <p id="modal-stage-mission" class="text-xs sm:text-sm text-orange-100 leading-relaxed font-medium"></p>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btn-cancel-stage" type="button" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm transition cursor-pointer">Kembali</button>
+                <button id="btn-enter-stage" type="button" class="flex-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 text-white font-extrabold text-xs sm:text-sm shadow-lg transition cursor-pointer">MASUK PINTU!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CODEX STUDY NOTES MODAL (PUSTAKA ILMU - 6 BAB LENGKAP & TULISAN BESAR) -->
+    <div id="codex-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-md p-3 sm:p-5">
+        <div class="max-w-3xl w-full max-h-[88vh] flex flex-col lava-panel rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-amber-400/50">
+            <div class="flex items-center justify-between pb-3.5 border-b border-slate-700">
+                <div>
+                    <h2 class="text-lg sm:text-2xl font-black text-amber-300">📜 Kitab Ilmu: 3. Bijak Mengurus Stres</h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-0.5">Panduan Lengkap Psikologi, Kawalan Emosi & Kesihatan Mental.</p>
+                </div>
+                <button id="btn-close-codex" type="button" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-base font-bold cursor-pointer shrink-0">✕</button>
+            </div>
+            <div class="overflow-y-auto custom-scroll py-4 space-y-4 text-sm sm:text-base pr-2">
+                <div id="codex-card-1" class="bg-slate-900/95 border border-red-500/45 rounded-2xl p-4 sm:p-5">
+                    <h3 class="font-black text-red-400 text-base sm:text-lg mb-1.5">1. Apa Itu Stres & Tanda-tanda Awal</h3>
+                    <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-2">
+                        Stres ialah tindak balas fizikal, emosi dan mental badan terhadap sebarang perubahan atau tuntutan. <b>Eustres</b> (stres positif) mendorong motivasi, manakala <b>Distres</b> (stres negatif) yang berpanjangan menjejaskan kesihatan.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-200 text-xs sm:text-sm space-y-1">
+                        <li><b>Fizikal:</b> Degupan jantung laju, sakit kepala, otot tegang, lesu dan sukar tidur.</li>
+                        <li><b>Emosi:</b> Cepat marah, gelisah, mudah menangis, rasa terbeban atau murung.</li>
+                        <li><b>Kognitif & Tingkah Laku:</b> Sukar fokus, pelupa, suka menyendiri atau hilang selera makan.</li>
+                    </ul>
+                </div>
+
+                <div id="codex-card-2" class="bg-slate-900/95 border border-orange-500/45 rounded-2xl p-4 sm:p-5">
+                    <h3 class="font-black text-orange-400 text-base sm:text-lg mb-1.5">2. Punca-punca Stres & Pengurusan Masa</h3>
+                    <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-2">
+                        Tekanan boleh berpunca daripada faktor luaran (tugasan bertimbun, peperiksaan, konflik rakan/keluarga) atau faktor dalaman (sifat perfeksionis, <i>overthinking</i>, kurang rehat).
+                    </p>
+                    <ul class="list-disc list-inside text-slate-200 text-xs sm:text-sm space-y-1">
+                        <li><b>Teknik Pomodoro:</b> Fokus belajar/bekerja 25 minit dan berehat 5 minit untuk elak keletihan mental.</li>
+                        <li><b>Komunikasi Asertif:</b> Berani berkata "tidak" secara sopan apabila tugasan melebihi kemampuan diri.</li>
+                    </ul>
+                </div>
+
+                <div id="codex-card-3" class="bg-slate-900/95 border border-emerald-500/45 rounded-2xl p-4 sm:p-5">
+                    <h3 class="font-black text-emerald-300 text-base sm:text-lg mb-1.5">3. Teknik Relaksasi Pantas (Pernafasan 4-4-4)</h3>
+                    <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-2">
+                        Pernafasan dalam mengaktifkan sistem saraf parasimpatetik bagi menurunkan hormon kortisol dan menenangkan degupan jantung dalam masa 1–2 minit.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-200 text-xs sm:text-sm space-y-1">
+                        <li><b>Pernafasan Kotak 4-4-4:</b> Tarik nafas perlahan melalui hidung (4 saat) → Tahan nafas (4 saat) → Hembus perlahan melalui mulut (4 saat).</li>
+                        <li><b>Teknik Grounding 5-4-3-2-1:</b> Sebut 5 benda dilihat, 4 disentuh, 3 didengar, 2 dihidu dan 1 dirasa.</li>
+                    </ul>
+                </div>
+
+                <div id="codex-card-4" class="bg-slate-900/95 border border-purple-500/45 rounded-2xl p-4 sm:p-5">
+                    <h3 class="font-black text-purple-400 text-base sm:text-lg mb-1.5">4. 4 Langkah Penyelesaian Masalah Sistematik</h3>
+                    <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-2">
+                        Pecahkan masalah besar kepada langkah kecil yang boleh dikawal supaya tidak berasa buntu:
+                    </p>
+                    <ul class="list-disc list-inside text-slate-200 text-xs sm:text-sm space-y-1">
+                        <li><b>Langkah 1 (Kenal Pasti):</b> Nyatakan punca sebenar masalah secara jelas dan objektif.</li>
+                        <li><b>Langkah 2 (Jana Pilihan):</b> Senaraikan sekurang-kurangnya 2–3 alternatif penyelesaian.</li>
+                        <li><b>Langkah 3 (Nilai Kesan):</b> Timbang kebaikan dan risiko setiap pilihan dengan tenang.</li>
+                        <li><b>Langkah 4 (Bertindak & Semak):</b> Laksanakan pilihan terbaik dan nilai hasilnya.</li>
+                    </ul>
+                </div>
+
+                <div id="codex-card-5" class="bg-slate-900/95 border border-cyan-500/45 rounded-2xl p-4 sm:p-5">
+                    <h3 class="font-black text-cyan-400 text-base sm:text-lg mb-1.5">5. Gaya Hidup Sihat & Ketahanan Mental</h3>
+                    <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-2">
+                        Tubuh yang cergas membina daya tahan emosi yang lebih kuat terhadap tekanan harian:
+                    </p>
+                    <ul class="list-disc list-inside text-slate-200 text-xs sm:text-sm space-y-1">
+                        <li><b>Tidur Berkualiti:</b> Dapatkan 7–8 jam tidur setiap malam dan kurangkan skrin sebelum tidur.</li>
+                        <li><b>Aktiviti Fizikal & Pemakanan:</b> Bersenam 30 minit sehari serta amalkan pemakanan seimbang dan air kosong mencukupi.</li>
+                    </ul>
+                </div>
+
+                <div id="codex-card-6" class="bg-slate-900/95 border border-amber-500/45 rounded-2xl p-4 sm:p-5">
+                    <h3 class="font-black text-amber-400 text-base sm:text-lg mb-1.5">6. Sokongan Sosial & Talian Bantuan Psikososial</h3>
+                    <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-2">
+                        Anda tidak perlu memendam tekanan sendirian. Berkongsi perasaan dengan orang dipercayai (ibu bapa, guru kaunseling, sahabat) mampu meringankan beban emosi.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-200 text-xs sm:text-sm space-y-1">
+                        <li><b>Talian HEAL 15555 (KKM):</b> Talian bantuan sokongan kesihatan mental Kementerian Kesihatan Malaysia.</li>
+                        <li><b>Talian Kasih 15999:</b> Khidmat kaunseling dan bantuan psikososial 24 jam.</li>
+                        <li><b>Befrienders KL (03-7627 2929):</b> Sokongan emosi sulit dan percuma 24 jam setiap hari.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALTAR REFLEKSI DIRI MODAL (PINTU 6) -->
+    <div id="reflection-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-md p-4">
+        <div class="max-w-2xl w-full max-h-[90vh] flex flex-col lava-panel rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-amber-400/50">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400">PINTU 6 • ALTAR REFLEKSI DIRI</span>
+                    <h2 class="text-lg sm:text-xl font-black text-white">✍️ Jurnal Pengurusan Stres Peribadi</h2>
+                </div>
+                <button id="btn-close-reflection" type="button" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold cursor-pointer">✕</button>
+            </div>
+
+            <div class="overflow-y-auto custom-scroll py-3.5 space-y-3 text-xs sm:text-sm pr-1">
+                <p class="text-slate-200 bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 leading-relaxed">
+                    Lengkapkan catatan refleksi kendiri anda di bawah untuk menebus <span class="text-amber-300 font-bold">💎 Permata Kebijaksanaan</span>!
+                </p>
+
+                <div>
+                    <label class="block font-bold text-red-300 mb-1">1. Tanda awal stres yang sering saya alami:</label>
+                    <input id="ref-signs" type="text" placeholder="Contoh: Jantung berdebar laju, bahu tegang, sukar fokus..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-slate-100">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-orange-300 mb-1">2. Punca utama tekanan saya minggu ini:</label>
+                    <input id="ref-causes" type="text" placeholder="Contoh: Banyak tugasan serentak dan kurang masa rehat..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-slate-100">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-emerald-300 mb-1">3. Teknik tenang pilihan saya apabila tertekan:</label>
+                    <input id="ref-relax" type="text" placeholder="Contoh: Pernafasan Kotak 4-4-4, berjalan santai, berbual dengan rakan..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-slate-100">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-purple-300 mb-1">4. Pelan tindakan penyelesaian masalah saya:</label>
+                    <textarea id="ref-plan" rows="2" placeholder="Contoh: Menyusun jadual keutamaan harian dan mendapatkan tidur cukup 7 jam..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-slate-100"></textarea>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <span id="reflection-feedback" class="text-xs sm:text-sm font-bold text-rose-400"></span>
+                    <button id="btn-save-reflection" type="button" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg cursor-pointer">
+                        💎 Simpan Jurnal & Tebus Permata
+                    </button>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <h3 class="font-bold text-sky-300 text-xs sm:text-sm">📖 Rekod Refleksi Tersimpan</h3>
+                        <span id="saved-ref-count" class="text-xs text-slate-400">0 catatan</span>
+                    </div>
+                    <div id="saved-reflections-list" class="space-y-2 max-h-36 overflow-y-auto custom-scroll pr-1">
+                        <div class="text-xs text-slate-500 italic">Belum ada catatan refleksi disimpan.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VICTORY MODAL -->
+    <div id="victory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-md p-4">
+        <div class="max-w-lg w-full bg-gradient-to-b from-slate-900 to-indigo-950 border-2 border-emerald-400/70 rounded-3xl p-6 text-center shadow-[0_0_55px_rgba(52,211,153,0.45)]">
+            <div class="text-4xl mb-2">🏆🧘💎</div>
+            <h2 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-sky-300 to-amber-300 mb-2">
+                WIRA BIJAK MENGURUS STRES!
+            </h2>
+            <p class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-4">
+                Tahniah! Anda telah menakluki kesemua <span class="text-emerald-300 font-bold">6 Pintu Cabaran Pengurusan Stres</span> dan membina ketahanan mental yang mantap!
+            </p>
+            <div class="flex flex-col sm:flex-row gap-2.5">
+                <button id="btn-replay-fanfare" type="button" class="flex-1 py-3 rounded-xl bg-amber-500/25 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 font-extrabold text-xs sm:text-sm cursor-pointer">
+                    🎺 Main Audio Pemenang
+                </button>
+                <button id="btn-play-again" type="button" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-600 text-white font-extrabold text-xs sm:text-sm shadow-lg cursor-pointer">
+                    Teruskan Meneroka
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ============================================================================
+// 1. PROCEDURAL WEB AUDIO ENGINE (SUPER MARIO STYLE THEME & VICTORY FANFARE)
+// ============================================================================
+class ChiptuneAudioEngine {
+    constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.mode = 'lobby';
+        this.isPlayingMusic = false;
+        this.musicTimer = null;
+        this.stepIndex = 0;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+        }
+    }
+
+    setMode(newMode) {
+        this.mode = newMode;
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+        if (this.enabled) {
+            this.init();
+            if (!this.isPlayingMusic) this.startMusic();
+        } else {
+            this.stopMusic();
+        }
+        return this.enabled;
+    }
+
+    playTone(freq, duration, type = 'square', volume = 0.08, delay = 0) {
+        if (!this.enabled || !freq) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+    }
+
+    startMusic() {
+        if (this.isPlayingMusic || !this.enabled) return;
+        this.init();
+        this.isPlayingMusic = true;
+
+        // Melodi rancak ala Super Mario (Lead Square + Bass Triangle)
+        const upbeatLead = [
+            659.25, 659.25, 0, 659.25, 0, 523.25, 659.25, 0,
+            783.99, 0, 0, 0, 392.00, 0, 0, 0,
+            523.25, 0, 0, 392.00, 0, 0, 329.63, 0,
+            440.00, 0, 493.88, 0, 466.16, 440.00, 0, 392.00
+        ];
+        const upbeatBass = [
+            164.81, 0, 164.81, 0, 164.81, 0, 130.81, 0,
+            196.00, 0, 246.94, 0, 98.00, 0, 146.83, 0,
+            130.81, 0, 196.00, 0, 164.81, 0, 130.81, 0,
+            110.00, 0, 123.47, 0, 116.54, 110.00, 0, 98.00
+        ];
+        const zenLead = [
+            523.25, 0, 659.25, 0, 783.99, 0, 659.25, 0,
+            587.33, 0, 698.46, 0, 880.00, 0, 783.99, 0
+        ];
+
+        this.musicTimer = setInterval(() => {
+            if (!this.enabled) return;
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume().catch(() => {});
+            }
+            if (this.mode === 'zen') {
+                const note = zenLead[this.stepIndex % zenLead.length];
+                if (note > 0) this.playTone(note, 0.24, 'triangle', 0.065);
+            } else {
+                const lead = upbeatLead[this.stepIndex % upbeatLead.length];
+                const bass = upbeatBass[this.stepIndex % upbeatBass.length];
+                if (lead > 0) this.playTone(lead, 0.13, 'square', 0.055);
+                if (bass > 0) this.playTone(bass, 0.15, 'triangle', 0.085);
+            }
+            this.stepIndex++;
+        }, 145);
+    }
+
+    stopMusic() {
+        this.isPlayingMusic = false;
+        if (this.musicTimer) {
+            clearInterval(this.musicTimer);
+            this.musicTimer = null;
+        }
+    }
+
+    playSFX(type) {
+        if (!this.enabled) return;
+        this.init();
+        if (type === 'jump') {
+            this.playTone(320, 0.08, 'square', 0.08, 0);
+            this.playTone(540, 0.14, 'square', 0.08, 0.06);
+        } else if (type === 'shoot') {
+            this.playTone(920, 0.06, 'sawtooth', 0.07, 0);
+            this.playTone(420, 0.08, 'square', 0.06, 0.04);
+        } else if (type === 'collect' || type === 'powerup') {
+            this.playTone(587.33, 0.09, 'square', 0.09, 0);
+            this.playTone(880.00, 0.18, 'square', 0.09, 0.08);
+        } else if (type === 'portal') {
+            this.playTone(440, 0.10, 'triangle', 0.10, 0);
+            this.playTone(554.37, 0.10, 'triangle', 0.10, 0.09);
+            this.playTone(659.25, 0.22, 'triangle', 0.10, 0.18);
+        } else if (type === 'hit') {
+            this.playTone(180, 0.14, 'sawtooth', 0.11, 0);
+            this.playTone(110, 0.20, 'sawtooth', 0.11, 0.10);
+        }
+    }
+
+    playVictoryFanfare() {
+        if (!this.enabled) return;
+        this.init();
+        const fanfare = [
+            { f: 523.25, d: 0.14, t: 0.00 },
+            { f: 659.25, d: 0.14, t: 0.14 },
+            { f: 783.99, d: 0.14, t: 0.28 },
+            { f: 1046.50, d: 0.30, t: 0.42 },
+            { f: 783.99, d: 0.16, t: 0.76 },
+            { f: 1046.50, d: 0.55, t: 0.94 }
+        ];
+        fanfare.forEach(n => {
+            this.playTone(n.f, n.d, 'square', 0.10, n.t);
+            this.playTone(n.f * 0.5, n.d, 'triangle', 0.11, n.t);
+        });
+    }
+}
+
+const audio = new ChiptuneAudioEngine();
+
+// ============================================================================
+// 2. EDUCATIONAL DATA: 3. BIJAK MENGURUS STRES
+// ============================================================================
+const STAGE_DATA = {
+    1: {
+        tag: "PINTU 1 • KESEDARAN AWAL",
+        emoji: "💓",
+        title: "Tanda-tanda Stres",
+        color: 0xef4444,
+        lesson: "Mengenali tanda awal stres (fizikal seperti jantung laju & sakit kepala; emosi seperti gelisah & mudah marah; kognitif seperti sukar fokus) membantu kita bertindak awal sebelum distres memudaratkan.",
+        mission: "Tembak & elak Meteor Gejala Stres, sambil kumpul 5 Kristal Kesedaran! Tangkap Kapsul [S] Spread Shot untuk tembakan 3-arah!",
+        sideInfo: "💓 TANDA STRES: Perhatikan perubahan fizikal (jantung laju, otot tegang), emosi (gelisah, mudah marah) dan fikiran (sukar fokus) sebagai isyarat awal.",
+        meteors: [
+            { label: "💓 Jantung Berdebar", desc: "Tanda Fizikal: Hormon adrenalin meningkatkan kadar degupan jantung." },
+            { label: "🤯 Sukar Fokus", desc: "Tanda Kognitif: Fikiran berserabut menyukarkan tumpuan belajar." },
+            { label: "😠 Mudah Marah", desc: "Tanda Emosi: Kesabaran menipis akibat tekanan berterusan." },
+            { label: "😫 Otot Tegang", desc: "Tanda Fizikal: Bahu dan leher terasa kaku dan lenguh." },
+            { label: "😴 Gangguan Tidur", desc: "Tanda Tingkah Laku: Sukar tidur lena memikirkan masalah." }
+        ],
+        crystals: [
+            { name: "Eustres vs Distres", info: "✨ Eustres ialah stres positif yang memotivasikan; Distres ialah stres negatif." },
+            { name: "Isyarat Fizikal", info: "🩺 Mengenali degupan jantung laju & sakit kepala sebagai amaran awal." },
+            { name: "Kesedaran Emosi", info: "💙 Mengakui rasa gelisah atau kecewa tanpa menyalahkan diri sendiri." },
+            { name: "Fokus Kognitif", info: "🧠 Menyedari corak fikiran negatif (overthinking) lebih awal." },
+            { name: "Kawalan Diri", info: "🛡️ Kesedaran awal ialah langkah pertama mengurus stres dengan bijak!" }
+        ]
+    },
+    2: {
+        tag: "PINTU 2 • ANALISIS PUNCA",
+        emoji: "🌋",
+        title: "Punca-punca Stres",
+        color: 0xf97316,
+        lesson: "Stres berpunca daripada tekanan luaran (beban tugasan, peperiksaan, konflik) dan tekanan dalaman (perfeksionisme, pengurusan masa lemah). Mengenal pasti punca memudahkan tindakan.",
+        mission: "Tembak Raksasa Punca Stres 3D (Klik / F) sebanyak 6 kali untuk menewaskan setiap faktor tekanan!",
+        sideInfo: "🌋 PUNCA STRES: Kenal pasti punca luaran (tugasan bertimbun, konflik) & dalaman (overthinking, kurang rehat) supaya dapat diatasi secara terancang.",
+        bossPhases: [
+            { label: "📚 PUNCA: BEBAN TUGASAN", info: "📚 Beban Tugasan: Pecahkan kerja besar kepada bahagian kecil (Teknik Pomodoro 25m)." },
+            { label: "📝 PUNCA: PEPERIKSAAN", info: "📝 Tekanan Peperiksaan: Ulang kaji secara berjadual, bukan saat akhir." },
+            { label: "🗣️ PUNCA: KONFLIK RAKAN", info: "🗣️ Konflik Sosial: Amalkan komunikasi asertif dan mendengar dengan empati." },
+            { label: "⏰ PUNCA: MASA TIDAK TERATUR", info: "⏰ Pengurusan Masa: Utamakan tugasan penting dan segera dahulu." },
+            { label: "💭 PUNCA: OVERTHINKING", info: "💭 Fikiran Berlebihan: Tukar fikiran negatif kepada langkah tindakan realistik." },
+            { label: "✅ PUNCA STRES DIATASI!", info: "✅ Tahniah! Anda berjaya menganalisis dan menewaskan kesemua punca tekanan!" }
+        ]
+    },
+    3: {
+        tag: "PINTU 3 • STRATEGI RELAKSASI",
+        emoji: "🌬️",
+        title: "Pernafasan Kotak 4-4-4",
+        color: 0x10b981,
+        lesson: "Teknik Pernafasan Kotak 4-4-4 (Tarik 4 saat, Tahan 4 saat, Hembus 4 saat) menenangkan sistem saraf serta-merta dan menurunkan kadar degupan jantung.",
+        mission: "Lompat (SPACE) melintasi 4 platform tenang mengikut ritma pernafasan menuju ke Pulau Ketenangan!",
+        sideInfo: "🌬️ PERNAFASAN 4-4-4: Tarik nafas perlahan (4s) → Tahan nafas (4s) → Hembus perlahan (4s). Ulang 4 kitaran untuk menenangkan minda.",
+        stepTips: [
+            "🌬️ Langkah 1: Tarik nafas dalam melalui hidung selama 4 saat.",
+            "⏸️ Langkah 2: Tahan nafas dengan tenang selama 4 saat.",
+            "🍃 Langkah 3: Hembus nafas perlahan melalui mulut selama 4 saat.",
+            "🧘 Langkah 4: Kendurkan bahu dan rasai ketenangan menyeluruh.",
+            "🏆 Ketenangan Minda & Emosi Dicapai!"
+        ]
+    },
+    4: {
+        tag: "PINTU 4 • TINDAKAN SISTEMATIK",
+        emoji: "🧭",
+        title: "Penyelesaian Masalah",
+        color: 0xa855f7,
+        lesson: "Pengurusan stres berkesan memerlukan penyelesaian masalah secara berperingkat: (1) Kenal pasti masalah, (2) Jana pilihan, (3) Nilai kesan, dan (4) Bertindak.",
+        mission: "Ambil Kunci Tindakan, lalu lengkapkan 4 Zon Penyelesaian Masalah mengikut urutan (1 → 2 → 3 → 4)!",
+        sideInfo: "🧭 PENYELESAIAN MASALAH: Ikut 4 langkah teratur: 1. Kenal pasti masalah → 2. Jana pilihan → 3. Nilai kesan → 4. Bertindak & semak.",
+        zones: [
+            { step: 1, name: "ZON 1: KENAL PASTI", info: "🔍 Langkah 1: Nyatakan punca sebenar masalah secara jelas." },
+            { step: 2, name: "ZON 2: JANA PILIHAN", info: "💡 Langkah 2: Senaraikan beberapa alternatif penyelesaian yang munasabah." },
+            { step: 3, name: "ZON 3: NILAI KESAN", info: "⚖️ Langkah 3: Bandingkan kebaikan dan risiko setiap pilihan." },
+            { step: 4, name: "ZON 4: BERTINDAK", info: "🚀 Langkah 4: Laksanakan pilihan terbaik dengan penuh yakin!" }
+        ]
+    },
+    5: {
+        tag: "PINTU 5 • PENGUKUHAN ILMU",
+        emoji: "📚",
+        title: "Pustaka Ilmu Stres",
+        color: 0x06b6d4,
+        lesson: "Ilmu pengetahuan tentang kesihatan mental, gaya hidup sihat dan saluran bantuan sokongan menjadikan seseorang lebih berdaya tahan.",
+        mission: "Dekati ke-6 tugu ilmu di pulau ini untuk mengkaji keseluruhan nota pengurusan stres.",
+        sideInfo: "📚 PUSTAKA ILMU: Baca kesemua 6 tugu ilmu merangkumi tanda stres, punca, pernafasan 4-4-4, penyelesaian masalah, gaya hidup sihat & talian bantuan."
+    },
+    6: {
+        tag: "PINTU 6 • PENILAIAN KENDIRI",
+        emoji: "✍️",
+        title: "Altar Refleksi Diri",
+        color: 0xf59e0b,
+        lesson: "Refleksi kendiri membantu pelajar mengenal pasti corak tekanan peribadi serta merancang strategi daya tindak yang paling sesuai untuk diri sendiri.",
+        mission: "Dekati Altar Keemasan dan lengkapkan Jurnal Refleksi Pengurusan Stres untuk menebus Permata Kebijaksanaan!",
+        sideInfo: "✍️ REFLEKSI DIRI: Catat tanda stres, punca tekanan, teknik relaksasi pilihan dan pelan tindakan anda di Altar Keemasan."
+    }
+};
+
+// ============================================================================
+// 3. GLOBAL GAME STATE & ENGINE VARIABLES
+// ============================================================================
+let useThreeJS = false;
+let scene, camera, renderer;
+let playerGroup, playerBody, playerRing, playerLight, wisdomGemMesh, leftLegMesh, rightLegMesh, gunMesh;
+let fallbackCanvas, fallbackCtx;
+let lastTime = performance.now();
+let totalElapsed = 0;
+
+const gameState = {
+    started: false,
+    gender: 'male',
+    weaponType: 'normal',
+    weaponTimer: 0,
+    mode: 'hub',
+    pendingStage: null,
+    calmness: 100,
+    completed: { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false },
+    hasWisdomGem: false,
+    victoryShown: false,
+    pos: { x: 0, y: 0.8, z: 2.5 },
+    vel: { x: 0, y: 0, z: 0 },
+    facingAngle: 0,
+    isGrounded: true,
+    standingPlatform: null,
+    shootCooldown: 0,
+    invulnTimer: 0,
+    keys: {},
+    dpad: { up: false, down: false, left: false, right: false },
+    hubPlatforms: [],
+    hubObjects: [],
+    portals: [],
+    stageObjects: [],
+    projectiles: [],
+    enemies: [],
+    collectibles: [],
+    powerups: [],
+    platforms: [],
+    particles: [],
+    explosions: [],
+    interactables: [],
+    stageProgress: 0,
+    stageTarget: 5,
+    boss: null,
+    bossLabelSprite: null,
+    hasKey: false,
+    keyMesh: null,
+    goalGate: null,
+    solutionStep: 0,
+    solutionZones: [],
+    breathTimer: 0,
+    powerupSpawnTimer: 6
+};
+
+function focusGameCanvas() {
+    const container = document.getElementById('game-container');
+    if (container) container.focus({ preventScroll: true });
+    window.focus();
+}
+
+// ============================================================================
+// 4. THREE.JS ENGINE INITIALIZATION & HUMAN HERO MODEL
+// ============================================================================
+function initEngine() {
+    const container = document.getElementById('game-container');
+    container.innerHTML = '';
+
+    try {
+        if (typeof THREE === 'undefined') throw new Error("Three.js tidak tersedia");
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050204);
+        scene.fog = new THREE.FogExp2(0x100407, 0.019);
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 160);
+        camera.position.set(0, 19, 16);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0x521c33, 1.15);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xff7a45, 1.3);
+        dirLight.position.set(15, 28, 12);
+        scene.add(dirLight);
+
+        const lavaUnderLight = new THREE.HemisphereLight(0x6b21a8, 0xea580c, 0.85);
+        scene.add(lavaUnderLight);
+
+        createLavaOcean();
+        createHumanPlayer3D(gameState.gender);
+        createAmbientEmbers();
+        useThreeJS = true;
+    } catch (err) {
+        useThreeJS = false;
+        fallbackCanvas = document.createElement('canvas');
+        fallbackCanvas.width = window.innerWidth;
+        fallbackCanvas.height = window.innerHeight;
+        fallbackCtx = fallbackCanvas.getContext('2d');
+        container.appendChild(fallbackCanvas);
+    }
+
+    buildHubWorld();
+    window.addEventListener('resize', onWindowResize);
+}
+
+let lavaMesh, lavaTextureCanvas, lavaCtx, lavaTex;
+function createLavaOcean() {
+    lavaTextureCanvas = document.createElement('canvas');
+    lavaTextureCanvas.width = 256;
+    lavaTextureCanvas.height = 256;
+    lavaCtx = lavaTextureCanvas.getContext('2d');
+    lavaTex = new THREE.CanvasTexture(lavaTextureCanvas);
+    lavaTex.wrapS = THREE.RepeatWrapping;
+    lavaTex.wrapT = THREE.RepeatWrapping;
+    lavaTex.repeat.set(14, 14);
+    updateLavaTexture(0);
+
+    const geo = new THREE.PlaneGeometry(180, 180);
+    const mat = new THREE.MeshStandardMaterial({
+        map: lavaTex,
+        emissive: new THREE.Color(0xd93800),
+        emissiveMap: lavaTex,
+        emissiveIntensity: 1.4,
+        roughness: 0.35
+    });
+    lavaMesh = new THREE.Mesh(geo, mat);
+    lavaMesh.rotation.x = -Math.PI / 2;
+    lavaMesh.position.y = -0.6;
+    scene.add(lavaMesh);
+}
+
+function updateLavaTexture(time) {
+    if (!lavaCtx) return;
+    const w = 256, h = 256;
+    lavaCtx.fillStyle = '#3b0702';
+    lavaCtx.fillRect(0, 0, w, h);
+
+    for (let i = 0; i < 16; i++) {
+        const x = (Math.sin(time * 0.4 + i * 1.7) * 0.5 + 0.5) * w;
+        const y = (Math.cos(time * 0.3 + i * 2.3) * 0.5 + 0.5) * h;
+        const r = 28 + Math.sin(time + i) * 10;
+        const grad = lavaCtx.createRadialGradient(x, y, 2, x, y, r);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.4, '#f97316');
+        grad.addColorStop(0.8, '#991b1b');
+        grad.addColorStop(1, 'rgba(59, 7, 2, 0)');
+        lavaCtx.fillStyle = grad;
+        lavaCtx.beginPath();
+        lavaCtx.arc(x, y, r, 0, Math.PI * 2);
+        lavaCtx.fill();
+    }
+    if (lavaTex) lavaTex.needsUpdate = true;
+}
+
+function createHumanPlayer3D(gender) {
+    if (!scene) return;
+    if (playerGroup) scene.remove(playerGroup);
+
+    const isFemale = gender === 'female';
+    playerGroup = new THREE.Group();
+
+    const jacketColor = isFemale ? 0xec4899 : 0x0284c7;
+    const accentColor = isFemale ? 0xf472b6 : 0x38bdf8;
+    const hairColor   = isFemale ? 0x3b1d14 : 0x1e1b18;
+    const skinColor   = 0xffdbac;
+
+    // Badan / Jaket
+    const torsoGeo = new THREE.CylinderGeometry(0.36, 0.42, 0.85, 16);
+    const torsoMat = new THREE.MeshStandardMaterial({
+        color: jacketColor,
+        emissive: jacketColor,
+        emissiveIntensity: 0.25,
+        roughness: 0.4
+    });
+    playerBody = new THREE.Mesh(torsoGeo, torsoMat);
+    playerBody.position.y = 0.05;
+    playerGroup.add(playerBody);
+
+    // Kepala
+    const headGeo = new THREE.SphereGeometry(0.36, 20, 20);
+    const headMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.45 });
+    const headMesh = new THREE.Mesh(headGeo, headMat);
+    headMesh.position.y = 0.78;
+    playerGroup.add(headMesh);
+
+    // Rambut & Ikatan Kepala (Gaya Contra)
+    const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.7 });
+    const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.38, 18, 18, 0, Math.PI * 2, 0, Math.PI * 0.58), hairMat);
+    hairCap.position.set(0, 0.81, -0.03);
+    playerGroup.add(hairCap);
+
+    const headband = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.37, 0.37, 0.09, 20),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.4 })
+    );
+    headband.position.y = 0.90;
+    playerGroup.add(headband);
+
+    if (isFemale) {
+        const ponyTail = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.65, 14), hairMat);
+        ponyTail.position.set(0, 0.74, -0.38);
+        ponyTail.rotation.x = 0.45;
+        playerGroup.add(ponyTail);
+    }
+
+    // Mata
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), eyeMat);
+    leftEye.position.set(-0.13, 0.78, 0.32);
+    const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), eyeMat);
+    rightEye.position.set(0.13, 0.78, 0.32);
+    playerGroup.add(leftEye, rightEye);
+
+    // Lengan Kiri & Lengan Kanan memegang Meriam Tenaga Contra
+    const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.58, 12);
+    const leftArm = new THREE.Mesh(armGeo, torsoMat);
+    leftArm.position.set(-0.46, 0.08, 0.08);
+    leftArm.rotation.z = 0.22;
+
+    const rightArm = new THREE.Mesh(armGeo, torsoMat);
+    rightArm.position.set(0.46, 0.14, 0.24);
+    rightArm.rotation.x = Math.PI / 2.2;
+    playerGroup.add(leftArm, rightArm);
+
+    gunMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11, 0.14, 0.72, 12),
+        new THREE.MeshStandardMaterial({ color: 0x334155, emissive: 0x0ea5e9, emissiveIntensity: 0.45, metalness: 0.7 })
+    );
+    gunMesh.rotation.x = Math.PI / 2;
+    gunMesh.position.set(0.46, 0.18, 0.58);
+    playerGroup.add(gunMesh);
+
+    // Kaki Kiri & Kanan
+    const legGeo = new THREE.CylinderGeometry(0.12, 0.11, 0.55, 12);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+    leftLegMesh = new THREE.Mesh(legGeo, legMat);
+    leftLegMesh.position.set(-0.18, -0.52, 0);
+    rightLegMesh = new THREE.Mesh(legGeo, legMat);
+    rightLegMesh.position.set(0.18, -0.52, 0);
+    playerGroup.add(leftLegMesh, rightLegMesh);
+
+    // Gelang Aura Bawah
+    const ringGeo = new THREE.RingGeometry(0.68, 0.84, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+        color: accentColor,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.65
+    });
+    playerRing = new THREE.Mesh(ringGeo, ringMat);
+    playerRing.rotation.x = -Math.PI / 2;
+    playerRing.position.y = -0.74;
+    playerGroup.add(playerRing);
+
+    // Permata Pereka CASPER di atas kepala
+    const gemGeo = new THREE.OctahedronGeometry(0.26, 0);
+    const gemMat = new THREE.MeshStandardMaterial({
+        color: 0xfbbf24,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 1.3,
+        roughness: 0.1
+    });
+    wisdomGemMesh = new THREE.Mesh(gemGeo, gemMat);
+    wisdomGemMesh.position.set(0, 1.48, 0);
+    wisdomGemMesh.visible = gameState.hasWisdomGem;
+    playerGroup.add(wisdomGemMesh);
+
+    playerLight = new THREE.PointLight(accentColor, 2.3, 15);
+    playerLight.position.set(0, 1.3, 0);
+    playerGroup.add(playerLight);
+
+    scene.add(playerGroup);
+}
+
+function createAmbientEmbers() {
+    if (!useThreeJS) return;
+    const emberCount = 110;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(emberCount * 3);
+    for (let i = 0; i < emberCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 60;
+        positions[i * 3 + 1] = Math.random() * 14;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xfb923c, size: 0.22, transparent: true, opacity: 0.85 });
+    const embers = new THREE.Points(geo, mat);
+    embers.userData.isEmbers = true;
+    scene.add(embers);
+    gameState.particles.push(embers);
+}
+
+// ============================================================================
+// 5. HUB WORLD & 6 CHALLENGE DOORS BUILDER
+// ============================================================================
+function clearWorldEntities() {
+    if (useThreeJS && scene) {
+        [...gameState.hubObjects, ...gameState.stageObjects, ...gameState.projectiles,
+         ...gameState.enemies, ...gameState.collectibles, ...gameState.powerups,
+         ...gameState.platforms, ...gameState.explosions].forEach(obj => {
+            if (obj && obj.mesh) scene.remove(obj.mesh);
+            else if (obj) scene.remove(obj);
+        });
+    }
+    gameState.hubPlatforms = [];
+    gameState.hubObjects = [];
+    gameState.portals = [];
+    gameState.stageObjects = [];
+    gameState.projectiles = [];
+    gameState.enemies = [];
+    gameState.collectibles = [];
+    gameState.powerups = [];
+    gameState.platforms = [];
+    gameState.explosions = [];
+    gameState.interactables = [];
+    gameState.standingPlatform = null;
+    gameState.boss = null;
+    gameState.bossLabelSprite = null;
+    gameState.hasKey = false;
+    gameState.keyMesh = null;
+    gameState.goalGate = null;
+    gameState.solutionStep = 0;
+    gameState.solutionZones = [];
+}
+
+function createFloatingLabel(text, subtext, hexColor) {
+    if (!useThreeJS) return { text, subtext, hexColor };
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 190;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = 'rgba(6, 10, 22, 0.94)';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(14, 14, 612, 162, 30);
+    else ctx.rect(14, 14, 612, 162);
+    ctx.fill();
+
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = hexColor;
+    ctx.stroke();
+
+    ctx.fillStyle = hexColor;
+    ctx.font = '900 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, 320, 82);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '700 24px sans-serif';
+    ctx.fillText(subtext, 320, 134);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(5.6, 1.75, 1);
+    return sprite;
+}
+
+function createStonePlatform(x, y, z, w, h, d, color = 0x1e1b24, targetList = gameState.hubObjects) {
+    const platData = {
+        x, y, z, w, h, d,
+        dx: 0, dy: 0, dz: 0,
+        topY: y + h / 2,
+        color,
+        mesh: { position: { x, y, z }, rotation: { y: 0 }, scale: { set: () => {} }, add: () => {} }
+    };
+    if (useThreeJS) {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.85, metalness: 0.15 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x7c2d12, transparent: true, opacity: 0.6 }));
+        mesh.add(line);
+
+        scene.add(mesh);
+        platData.mesh = mesh;
+    }
+    targetList.push(platData);
+    return platData;
+}
+
+function buildHubWorld() {
+    clearWorldEntities();
+    gameState.mode = 'hub';
+    audio.setMode(Object.values(gameState.completed).every(Boolean) ? 'zen' : 'lava');
+    document.getElementById('breath-visual-box').classList.add('hidden');
+    updateSideInfoHub();
+
+    const centerIsland = createStonePlatform(0, -0.25, 0, 14, 0.5, 14, 0x231d2b, gameState.hubObjects);
+    gameState.hubPlatforms.push(centerIsland);
+
+    const portalConfigs = [
+        { id: 1, x: -12, z: -9, bx: -6.8, bz: -5.0, rotB: 0.65, title: "PINTU 1: TANDA STRES", sub: "Kenali Gejala Awal", color: 0xef4444, hex: "#f87171" },
+        { id: 2, x: 12, z: -9, bx: 6.8, bz: -5.0, rotB: -0.65, title: "PINTU 2: PUNCA STRES", sub: "Tewaskan Tekanan", color: 0xf97316, hex: "#fb923c" },
+        { id: 3, x: -14, z: 1.5, bx: -8.5, bz: 1.5, rotB: Math.PI / 2, title: "PINTU 3: PERNAFASAN", sub: "Ritma Kotak 4-4-4", color: 0x10b981, hex: "#34d399" },
+        { id: 4, x: 14, z: 1.5, bx: 8.5, bz: 1.5, rotB: Math.PI / 2, title: "PINTU 4: PENYELESAIAN", sub: "4 Langkah Tindakan", color: 0xa855f7, hex: "#c084fc" },
+        { id: 5, x: -10, z: 12, bx: -5.8, bz: 7.2, rotB: -0.62, title: "PINTU 5: PUSTAKA ILMU", sub: "6 Bab Nota Lengkap", color: 0x06b6d4, hex: "#22d3ee" },
+        { id: 6, x: 10, z: 12, bx: 5.8, bz: 7.2, rotB: 0.62, title: "PINTU 6: REFLEKSI DIRI", sub: "Jurnal & Permata", color: 0xf59e0b, hex: "#fbbf24" }
+    ];
+
+    portalConfigs.forEach(cfg => {
+        const pIsland = createStonePlatform(cfg.x, -0.25, cfg.z, 7.2, 0.5, 7.2, 0x261f30, gameState.hubObjects);
+        const bridge = createStonePlatform(cfg.bx, -0.28, cfg.bz, 4.6, 0.45, 7.8, 0x2e2438, gameState.hubObjects);
+        bridge.mesh.rotation.y = cfg.rotB;
+        gameState.hubPlatforms.push(pIsland, bridge);
+
+        const isDone = gameState.completed[cfg.id];
+        const activeColor = isDone ? 0x34d399 : cfg.color;
+        let torusObj = { rotation: { z: 0 } };
+
+        if (useThreeJS) {
+            const portalGroup = new THREE.Group();
+            portalGroup.position.set(cfg.x, 0, cfg.z);
+
+            const pillarGeo = new THREE.BoxGeometry(0.65, 4.2, 0.65);
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x18131e, roughness: 0.7 });
+            const pLeft = new THREE.Mesh(pillarGeo, pillarMat);
+            pLeft.position.set(-1.6, 2.1, 0);
+            const pRight = new THREE.Mesh(pillarGeo, pillarMat);
+            pRight.position.set(1.6, 2.1, 0);
+            const pTop = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.65, 0.8), pillarMat);
+            pTop.position.set(0, 4.3, 0);
+            portalGroup.add(pLeft, pRight, pTop);
+
+            const torus = new THREE.Mesh(
+                new THREE.TorusGeometry(1.35, 0.14, 16, 36),
+                new THREE.MeshBasicMaterial({ color: activeColor })
+            );
+            torus.position.set(0, 2.1, 0);
+            portalGroup.add(torus);
+            torusObj = torus;
+
+            const core = new THREE.Mesh(
+                new THREE.CircleGeometry(1.25, 32),
+                new THREE.MeshBasicMaterial({ color: activeColor, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+            );
+            core.position.set(0, 2.1, 0);
+            portalGroup.add(core);
+
+            const label = createFloatingLabel(
+                isDone ? `✅ ${cfg.title}` : cfg.title,
+                isDone ? "SELESAI!" : cfg.sub,
+                isDone ? "#34d399" : cfg.hex
+            );
+            label.position.set(0, 5.6, 0);
+            portalGroup.add(label);
+
+            scene.add(portalGroup);
+            gameState.hubObjects.push({ mesh: portalGroup });
+        }
+
+        gameState.portals.push({
+            id: cfg.id,
+            x: cfg.x,
+            z: cfg.z,
+            title: cfg.title,
+            hex: isDone ? "#34d399" : cfg.hex,
+            isDone,
+            torus: torusObj,
+            triggered: false
+        });
+    });
+
+    gameState.pos = { x: 0, y: 0.8, z: 2.5 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    updateHUDForMode('hub');
+}
+
+// ============================================================================
+// 6. STAGE BUILDERS (1 TO 6) WITH CONTRA POWERUPS
+// ============================================================================
+function updateSideInfoHub() {
+    document.getElementById('side-panel-title').textContent = "🧭 Hab 3. Bijak Mengurus Stres";
+    document.getElementById('side-panel-desc').textContent = "Masuki kesemua 6 pintu bercahaya untuk menguasai Tanda Stres, Punca Stres, Pernafasan 4-4-4, Penyelesaian Masalah, Pustaka Ilmu & Refleksi Diri.";
+    document.getElementById('side-sub-label').textContent = "Pintu Cabaran Selesai:";
+    const completedCount = Object.values(gameState.completed).filter(Boolean).length;
+    document.getElementById('side-sub-val').textContent = `${completedCount} / 6`;
+    document.getElementById('side-info-panel').classList.remove('hidden');
+}
+
+function updateSideInfoStage(stageId) {
+    const data = STAGE_DATA[stageId];
+    document.getElementById('side-panel-title').textContent = data.title;
+    document.getElementById('side-panel-desc').textContent = data.sideInfo;
+    document.getElementById('side-sub-label').textContent = "Kemajuan Misi:";
+    document.getElementById('side-sub-val').textContent = `${gameState.stageProgress} / ${gameState.stageTarget}`;
+    document.getElementById('side-info-panel').classList.remove('hidden');
+    if (stageId === 3) {
+        document.getElementById('breath-visual-box').classList.remove('hidden');
+    } else {
+        document.getElementById('breath-visual-box').classList.add('hidden');
+    }
+}
+
+function setWeaponMode(type) {
+    gameState.weaponType = type;
+    gameState.weaponTimer = type === 'normal' ? 0 : 18;
+    const badge = document.getElementById('weapon-badge');
+    if (!badge) return;
+    if (type === 'spread') {
+        badge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/30 text-rose-200 border border-rose-400";
+        badge.textContent = "🔥 [S] SPREAD SHOT (3-ARAH)";
+    } else if (type === 'laser') {
+        badge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/30 text-amber-200 border border-amber-400";
+        badge.textContent = "⚡ [L] LASER PANTAS";
+    } else {
+        badge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-sky-500/25 text-sky-200 border border-sky-400/50";
+        badge.textContent = "🔫 [N] NORMAL";
+    }
+}
+
+function spawnContraPowerupCapsule(x, z) {
+    const kind = Math.random() < 0.55 ? 'spread' : 'laser';
+    const labelTxt = kind === 'spread' ? "🦅 KAPSUL [S] SPREAD" : "🦅 KAPSUL [L] LASER";
+    const hexCol = kind === 'spread' ? "#fb7185" : "#fbbf24";
+    const meshCol = kind === 'spread' ? 0xf43f5e : 0xf59e0b;
+
+    let group = { position: { x, y: 1.25, z } };
+    let pod = { rotation: { z: 0 } };
+    if (useThreeJS) {
+        group = new THREE.Group();
+        group.position.set(x, 1.25, z);
+        pod = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.45, 0.45, 1.1, 16),
+            new THREE.MeshStandardMaterial({ color: meshCol, emissive: meshCol, emissiveIntensity: 0.9, metalness: 0.5 })
+        );
+        pod.rotation.z = Math.PI / 2;
+        group.add(pod);
+
+        const lbl = createFloatingLabel(labelTxt, "Sentuh untuk Naik Taraf Senjata!", hexCol);
+        lbl.position.set(0, 1.45, 0);
+        lbl.scale.set(3.8, 1.15, 1);
+        group.add(lbl);
+        scene.add(group);
+    }
+    gameState.powerups.push({ mesh: group, pod, x, z, kind, life: 14 });
+}
+
+function spawnExplosion3D(x, y, z, colorHex = 0xf97316) {
+    if (!useThreeJS || !scene) return;
+    const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5, 12, 12),
+        new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9 })
+    );
+    sphere.position.set(x, y, z);
+    scene.add(sphere);
+    gameState.explosions.push({ mesh: sphere, age: 0, maxAge: 0.35 });
+}
+
+// STAGE 1: TANDA-TANDA STRES
+function startStage1() {
+    clearWorldEntities();
+    gameState.mode = 'stage1';
+    gameState.stageProgress = 0;
+    gameState.stageTarget = 5;
+    audio.setMode('lava');
+    updateSideInfoStage(1);
+
+    createStonePlatform(0, -0.25, 0, 18, 0.5, 18, 0x241726, gameState.stageObjects);
+    gameState.pos = { x: 0, y: 0.8, z: 5 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    spawnAwarenessCrystal();
+    spawnContraPowerupCapsule(-4.5, 2.0);
+    updateHUDForMode('stage1');
+    showToast("💓", "Pintu 1: Tanda-tanda Stres", "Tembak meteor gejala stres & kumpul 5 Kristal Kesedaran!");
+}
+
+let stage1SpawnTimer = 0;
+function spawnAwarenessCrystal() {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 2.5 + Math.random() * 5.0;
+    const cx = Math.cos(angle) * dist;
+    const cz = Math.sin(angle) * dist;
+    const crystalData = STAGE_DATA[1].crystals[gameState.stageProgress % STAGE_DATA[1].crystals.length];
+
+    let group = { position: { x: cx, y: 1.1, z: cz } };
+    let orb = { rotation: { y: 0 } };
+
+    if (useThreeJS) {
+        group = new THREE.Group();
+        group.position.set(cx, 1.1, cz);
+        orb = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.68, 0),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.95, roughness: 0.1 })
+        );
+        group.add(orb);
+        const lbl = createFloatingLabel(crystalData.name, "Sentuh untuk Kumpul!", "#38bdf8");
+        lbl.position.set(0, 1.55, 0);
+        lbl.scale.set(3.8, 1.15, 1);
+        group.add(lbl);
+        scene.add(group);
+    }
+    gameState.collectibles.push({ mesh: group, orb, x: cx, z: cz, type: 'crystal', data: crystalData });
+}
+
+function spawnStressMeteor() {
+    const tx = (Math.random() - 0.5) * 14.5;
+    const tz = (Math.random() - 0.5) * 14.5;
+    const meteorInfo = STAGE_DATA[1].meteors[Math.floor(Math.random() * STAGE_DATA[1].meteors.length)];
+
+    let orbGroup = { position: { x: tx, y: 13.5, z: tz } };
+    let warnMesh = { scale: { setScalar: () => {} } };
+    let core = { rotation: { x: 0 } };
+
+    if (useThreeJS) {
+        warnMesh = new THREE.Mesh(
+            new THREE.RingGeometry(0.2, 1.35, 24),
+            new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+        );
+        warnMesh.rotation.x = -Math.PI / 2;
+        warnMesh.position.set(tx, 0.05, tz);
+        scene.add(warnMesh);
+
+        orbGroup = new THREE.Group();
+        orbGroup.position.set(tx, 13.5, tz);
+        core = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.75, 1),
+            new THREE.MeshStandardMaterial({ color: 0x450a0a, emissive: 0xdc2626, emissiveIntensity: 0.85 })
+        );
+        orbGroup.add(core);
+
+        const mLabel = createFloatingLabel(meteorInfo.label, "Tembak atau Elak!", "#fca5a5");
+        mLabel.position.set(0, 1.4, 0);
+        mLabel.scale.set(3.6, 1.1, 1);
+        orbGroup.add(mLabel);
+        scene.add(orbGroup);
+    }
+
+    gameState.enemies.push({
+        type: 'meteor',
+        mesh: orbGroup,
+        core,
+        warnMesh,
+        meteorInfo,
+        tx, tz,
+        y: 13.5,
+        vy: -8.0 - Math.random() * 2.0
+    });
+}
+
+// STAGE 2: PUNCA-PUNCA STRES
+function startStage2() {
+    clearWorldEntities();
+    gameState.mode = 'stage2';
+    gameState.stageProgress = 0;
+    gameState.stageTarget = 6;
+    audio.setMode('lava');
+    updateSideInfoStage(2);
+
+    createStonePlatform(0, -0.25, 0, 20, 0.5, 20, 0x261616, gameState.stageObjects);
+    spawnContraPowerupCapsule(5.0, 2.5);
+
+    const firstPhase = STAGE_DATA[2].bossPhases[0];
+    let bossGroup = { position: { x: 0, y: 1.6, z: -4.5 }, scale: { setScalar: () => {} }, remove: () => {}, add: () => {} };
+    let torso = { rotation: { y: 0 } };
+    let shield = { rotation: { z: 0 } };
+
+    if (useThreeJS) {
+        bossGroup = new THREE.Group();
+        bossGroup.position.set(0, 1.6, -4.5);
+
+        torso = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(1.75, 1),
+            new THREE.MeshStandardMaterial({ color: 0x290d0d, emissive: 0xea580c, emissiveIntensity: 0.65, roughness: 0.4 })
+        );
+        bossGroup.add(torso);
+
+        const hornGeo = new THREE.ConeGeometry(0.35, 1.4, 8);
+        const hornMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xd97706, emissiveIntensity: 0.5 });
+        const hL = new THREE.Mesh(hornGeo, hornMat);
+        hL.position.set(-1.1, 1.5, 0); hL.rotation.z = 0.45;
+        const hR = new THREE.Mesh(hornGeo, hornMat);
+        hR.position.set(1.1, 1.5, 0); hR.rotation.z = -0.45;
+        bossGroup.add(hL, hR);
+
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+        const eL = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.2), eyeMat);
+        eL.position.set(-0.55, 0.4, 1.55);
+        const eR = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.2), eyeMat);
+        eR.position.set(0.55, 0.4, 1.55);
+        bossGroup.add(eL, eR);
+
+        shield = new THREE.Mesh(
+            new THREE.TorusGeometry(2.4, 0.12, 12, 32),
+            new THREE.MeshBasicMaterial({ color: 0xf97316 })
+        );
+        shield.rotation.x = Math.PI / 2;
+        bossGroup.add(shield);
+
+        const bossLabel = createFloatingLabel(firstPhase.label, "Tembak Meriam Tenaga (Klik / F)!", "#fb923c");
+        bossLabel.position.set(0, 3.2, 0);
+        bossGroup.add(bossLabel);
+        gameState.bossLabelSprite = bossLabel;
+
+        scene.add(bossGroup);
+        gameState.stageObjects.push({ mesh: bossGroup });
+    }
+
+    gameState.boss = {
+        mesh: bossGroup,
+        torso,
+        shield,
+        x: 0,
+        z: -4.5,
+        label: firstPhase.label,
+        hp: 6,
+        maxHp: 6,
+        attackTimer: 1.5,
+        moveAngle: 0
+    };
+
+    gameState.pos = { x: 0, y: 0.8, z: 6.5 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    updateHUDForMode('stage2');
+    showToast("🌋", firstPhase.label, "Tembak Raksasa Punca Stres untuk mengatasi setiap faktor tekanan!");
+}
+
+function updateBossPhaseLabel(phaseIdx) {
+    if (!gameState.boss) return;
+    const phase = STAGE_DATA[2].bossPhases[Math.min(phaseIdx, STAGE_DATA[2].bossPhases.length - 1)];
+    gameState.boss.label = phase.label;
+    if (useThreeJS && gameState.bossLabelSprite) {
+        gameState.boss.mesh.remove(gameState.bossLabelSprite);
+        const newLbl = createFloatingLabel(phase.label, "Atasi Punca Tekanan!", "#fb923c");
+        newLbl.position.set(0, 3.2, 0);
+        gameState.boss.mesh.add(newLbl);
+        gameState.bossLabelSprite = newLbl;
+    }
+}
+
+function fireContraBolt() {
+    if (gameState.shootCooldown > 0) return;
+    const isLaser = gameState.weaponType === 'laser';
+    const isSpread = gameState.weaponType === 'spread';
+    gameState.shootCooldown = isLaser ? 0.14 : 0.28;
+    audio.playSFX('shoot');
+
+    let baseAngle = gameState.facingAngle;
+    if (gameState.mode === 'stage2' && gameState.boss) {
+        baseAngle = Math.atan2(gameState.boss.x - gameState.pos.x, gameState.boss.z - gameState.pos.z);
+    }
+
+    const angles = isSpread ? [baseAngle - 0.24, baseAngle, baseAngle + 0.24] : [baseAngle];
+    const boltSpeed = isLaser ? 30 : 23;
+    const boltColor = isLaser ? 0xfbbf24 : (isSpread ? 0xfb7185 : 0x7dd3fc);
+
+    angles.forEach(ang => {
+        const dx = Math.sin(ang);
+        const dz = Math.cos(ang);
+        let boltMesh = { position: { x: gameState.pos.x, y: gameState.pos.y, z: gameState.pos.z } };
+        if (useThreeJS) {
+            boltMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(isLaser ? 0.28 : 0.34, 12, 12),
+                new THREE.MeshBasicMaterial({ color: boltColor })
+            );
+            boltMesh.position.set(gameState.pos.x, gameState.pos.y, gameState.pos.z);
+            scene.add(boltMesh);
+        }
+
+        gameState.projectiles.push({
+            mesh: boltMesh,
+            x: gameState.pos.x,
+            y: gameState.pos.y,
+            z: gameState.pos.z,
+            vx: dx * boltSpeed,
+            vz: dz * boltSpeed,
+            life: 1.6,
+            fromPlayer: true
+        });
+    });
+}
+
+// STAGE 3: PERNAFASAN KOTAK 4-4-4
+function startStage3() {
+    clearWorldEntities();
+    gameState.mode = 'stage3';
+    gameState.stageProgress = 0;
+    gameState.stageTarget = 5;
+    gameState.breathTimer = 0;
+    audio.setMode('zen');
+    updateSideInfoStage(3);
+
+    const platLayout = [
+        { x: 0,    y: -0.25, z: 13.5, w: 6.4, d: 6.4, behavior: 'start',  idx: 0, tag: "MULA: TENANG" },
+        { x: 0,    y: -0.15, z: 7.2,  w: 4.6, d: 4.6, behavior: 'rise',   idx: 1, tag: "1. TARIK (4s)" },
+        { x: 2.2,  y: 0.15,  z: 1.4,  w: 4.5, d: 4.5, behavior: 'hold',   idx: 2, tag: "2. TAHAN (4s)" },
+        { x: -2.0, y: 0.35,  z: -4.2, w: 4.5, d: 4.5, behavior: 'exhale', idx: 3, tag: "3. HEMBUS (4s)" },
+        { x: 0,    y: 0.55,  z: -9.8, w: 4.6, d: 4.6, behavior: 'relax',  idx: 4, tag: "4. RELAKSASI" },
+        { x: 0,    y: 0.80,  z: -16.0,w: 7.2, d: 7.2, behavior: 'goal',   isGoal: true, idx: 5, tag: "PULAU KETENANGAN" }
+    ];
+
+    platLayout.forEach(p => {
+        const plat = createStonePlatform(p.x, p.y, p.z, p.w, 0.55, p.d, p.isGoal ? 0x064e3b : 0x1e293b, gameState.platforms);
+        plat.baseX = p.x;
+        plat.baseY = p.y;
+        plat.baseZ = p.z;
+        plat.behavior = p.behavior;
+        plat.idx = p.idx;
+        plat.visited = p.idx === 0;
+        plat.isGoal = p.isGoal || false;
+        plat.tag = p.tag;
+
+        if (useThreeJS) {
+            const ring = new THREE.Mesh(
+                new THREE.RingGeometry(1.15, 1.45, 24),
+                new THREE.MeshBasicMaterial({ color: p.isGoal ? 0x34d399 : 0x38bdf8, side: THREE.DoubleSide })
+            );
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.3;
+            plat.mesh.add(ring);
+
+            if (!p.isGoal && p.idx > 0) {
+                const pLbl = createFloatingLabel(p.tag, "Lompat (SPACE)", "#7dd3fc");
+                pLbl.position.set(0, 1.55, 0);
+                pLbl.scale.set(3.6, 1.1, 1);
+                plat.mesh.add(pLbl);
+            }
+            if (p.isGoal) {
+                const zenOrb = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(1.1, 1),
+                    new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x10b981, emissiveIntensity: 1 })
+                );
+                zenOrb.position.set(p.x, p.y + 1.8, p.z);
+                scene.add(zenOrb);
+                gameState.collectibles.push({ mesh: zenOrb, x: p.x, z: p.z, type: 'zenGoal' });
+            }
+        } else if (p.isGoal) {
+            gameState.collectibles.push({ mesh: { rotation: { y: 0 } }, x: p.x, z: p.z, type: 'zenGoal' });
+        }
+    });
+
+    gameState.pos = { x: 0, y: 0.8, z: 13.5 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    updateHUDForMode('stage3');
+    showToast("🌬️", "Pernafasan Kotak 4-4-4", "Lompat (SPACE) melintasi 4 platform tenang!");
+}
+
+// STAGE 4: PENYELESAIAN MASALAH
+function startStage4() {
+    clearWorldEntities();
+    gameState.mode = 'stage4';
+    gameState.stageProgress = 0;
+    gameState.stageTarget = 5;
+    gameState.hasKey = false;
+    gameState.solutionStep = 0;
+    gameState.solutionZones = [];
+    audio.setMode('lava');
+    updateSideInfoStage(4);
+
+    createStonePlatform(0, -0.25, 0, 24, 0.5, 24, 0x1e1629, gameState.stageObjects);
+
+    const walls = [
+        { x: 0, z: -11.8, w: 24, d: 0.6 }, { x: 0, z: 11.8, w: 24, d: 0.6 },
+        { x: -11.8, z: 0, w: 0.6, d: 24 }, { x: 11.8, z: 0, w: 0.6, d: 24 },
+        { x: -3.5, z: 5.2, w: 11, d: 0.8 }, { x: 4.5, z: 1.5, w: 10, d: 0.8 },
+        { x: -4.5, z: -2.2, w: 10, d: 0.8 }, { x: 2.5, z: -6.2, w: 11, d: 0.8 }
+    ];
+    walls.forEach(w => {
+        const wall = createStonePlatform(w.x, 1.1, w.z, w.w, 2.2, w.d, 0x311d42, gameState.stageObjects);
+        wall.isWall = true;
+    });
+
+    let keyGroup = { position: { x: -8.5, y: 1.2, z: 8.2 }, rotation: { y: 0 } };
+    if (useThreeJS) {
+        keyGroup = new THREE.Group();
+        keyGroup.position.set(-8.5, 1.2, 8.2);
+        const keyOrb = new THREE.Mesh(
+            new THREE.TorusKnotGeometry(0.45, 0.14, 48, 8),
+            new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x10b981, emissiveIntensity: 1 })
+        );
+        keyGroup.add(keyOrb);
+        const kLbl = createFloatingLabel("🗝️ KUNCI TINDAKAN", "Ambil Kunci Langkah!", "#34d399");
+        kLbl.position.set(0, 1.75, 0);
+        kLbl.scale.set(3.8, 1.15, 1);
+        keyGroup.add(kLbl);
+        scene.add(keyGroup);
+        gameState.stageObjects.push({ mesh: keyGroup });
+    }
+    gameState.keyMesh = keyGroup;
+
+    const zoneCoords = [
+        { step: 1, x: 7.5, z: 8.2, color: 0x38bdf8, hex: "#38bdf8" },
+        { step: 2, x: -7.5, z: 1.5, color: 0xa855f7, hex: "#c084fc" },
+        { step: 3, x: 7.5, z: -2.2, color: 0xf59e0b, hex: "#fbbf24" },
+        { step: 4, x: -7.5, z: -8.8, color: 0x10b981, hex: "#34d399" }
+    ];
+
+    zoneCoords.forEach(zc => {
+        const zInfo = STAGE_DATA[4].zones[zc.step - 1];
+        let padMesh = { material: { emissiveIntensity: 0.45 } };
+        if (useThreeJS) {
+            const zGroup = new THREE.Group();
+            zGroup.position.set(zc.x, 0.1, zc.z);
+            padMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.6, 1.8, 0.25, 24),
+                new THREE.MeshStandardMaterial({ color: zc.color, emissive: zc.color, emissiveIntensity: 0.45, transparent: true, opacity: 0.75 })
+            );
+            zGroup.add(padMesh);
+            const zLbl = createFloatingLabel(zInfo.name, `Langkah ${zc.step}/4`, zc.hex);
+            zLbl.position.set(0, 2.2, 0);
+            zLbl.scale.set(4.1, 1.25, 1);
+            zGroup.add(zLbl);
+            scene.add(zGroup);
+            gameState.stageObjects.push({ mesh: zGroup });
+        }
+        gameState.solutionZones.push({ step: zc.step, x: zc.x, z: zc.z, hex: zc.hex, padMesh, completed: false, info: zInfo });
+    });
+
+    let gateGroup = { position: { x: 8.5, y: 1.5, z: -9.0 } };
+    if (useThreeJS) {
+        gateGroup = new THREE.Group();
+        gateGroup.position.set(8.5, 1.5, -9.0);
+        const gateMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(2.6, 3.0, 0.6),
+            new THREE.MeshStandardMaterial({ color: 0x7e22ce, emissive: 0xa855f7, emissiveIntensity: 0.7, transparent: true, opacity: 0.85 })
+        );
+        gateGroup.add(gateMesh);
+        const gLbl = createFloatingLabel("🚪 PINTU PENYELESAIAN", "Lengkapkan Zon 1→4", "#d8b4fe");
+        gLbl.position.set(0, 2.3, 0);
+        gLbl.scale.set(4.0, 1.2, 1);
+        gateGroup.add(gLbl);
+        scene.add(gateGroup);
+        gameState.stageObjects.push({ mesh: gateGroup });
+    }
+    gameState.goalGate = gateGroup;
+
+    const patrolConfigs = [
+        { x: 0, z: 3.4, min: -7.5, max: 7.5, speed: 3.2, label: "👾 PANIK & KELIRU" },
+        { x: 0, z: -4.2, min: -7.5, max: 7.5, speed: 3.6, label: "👾 TANGGUH KERJA" }
+    ];
+    patrolConfigs.forEach(pc => {
+        let pGroup = { position: { x: pc.x, y: 1.0, z: pc.z } };
+        if (useThreeJS) {
+            pGroup = new THREE.Group();
+            pGroup.position.set(pc.x, 1.0, pc.z);
+            const patrol = new THREE.Mesh(
+                new THREE.ConeGeometry(0.7, 1.8, 12),
+                new THREE.MeshStandardMaterial({ color: 0x1e1b4b, emissive: 0xe11d48, emissiveIntensity: 0.85 })
+            );
+            pGroup.add(patrol);
+            const pLbl = createFloatingLabel(pc.label, "Tembak atau Elak!", "#fda4af");
+            pLbl.position.set(0, 1.75, 0);
+            pLbl.scale.set(3.6, 1.1, 1);
+            pGroup.add(pLbl);
+            scene.add(pGroup);
+        }
+        gameState.enemies.push({ type: 'patrol', mesh: pGroup, x: pc.x, z: pc.z, min: pc.min, max: pc.max, speed: pc.speed, dir: 1, label: pc.label });
+    });
+
+    gameState.pos = { x: -2.5, y: 0.8, z: 9.2 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    updateHUDForMode('stage4');
+    showToast("🧭", "Penyelesaian Masalah", "Ambil Kunci & selesaikan 4 Zon Langkah secara teratur!");
+}
+
+// STAGE 5: PUSTAKA ILMU STRES
+function startStage5() {
+    clearWorldEntities();
+    gameState.mode = 'stage5';
+    gameState.stageProgress = 0;
+    gameState.stageTarget = 6;
+    audio.setMode('zen');
+    updateSideInfoStage(5);
+
+    createStonePlatform(0, -0.25, 0, 22, 0.5, 22, 0x0f172a, gameState.stageObjects);
+
+    const monuments = [
+        { id: 1, x: -6.5, z: -5.0, color: 0xef4444, hex: "#f87171", title: "1. TANDA STRES" },
+        { id: 2, x:  6.5, z: -5.0, color: 0xf97316, hex: "#fb923c", title: "2. PUNCA & MASA" },
+        { id: 3, x: -6.5, z:  0.5, color: 0x10b981, hex: "#34d399", title: "3. RELAKSASI 4-4-4" },
+        { id: 4, x:  6.5, z:  0.5, color: 0xa855f7, hex: "#c084fc", title: "4. SELESAI MASALAH" },
+        { id: 5, x: -6.5, z:  6.0, color: 0x06b6d4, hex: "#22d3ee", title: "5. GAYA HIDUP SIHAT" },
+        { id: 6, x:  6.5, z:  6.0, color: 0xf59e0b, hex: "#fbbf24", title: "6. TALIAN BANTUAN" }
+    ];
+
+    monuments.forEach(m => {
+        let gem = { rotation: { y: 0 } };
+        if (useThreeJS) {
+            const mGroup = new THREE.Group();
+            mGroup.position.set(m.x, 0, m.z);
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, 0.4, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+            base.position.y = 0.2;
+            const slab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 0.45), new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: m.color, emissiveIntensity: 0.4 }));
+            slab.position.y = 1.6;
+            gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.48, 0), new THREE.MeshBasicMaterial({ color: m.color }));
+            gem.position.y = 3.4;
+            const lbl = createFloatingLabel(m.title, "Dekati / Tekan E untuk Baca", m.hex);
+            lbl.position.set(0, 4.5, 0);
+            lbl.scale.set(4.0, 1.2, 1);
+            mGroup.add(base, slab, gem, lbl);
+            scene.add(mGroup);
+            gameState.stageObjects.push({ mesh: mGroup });
+        }
+        gameState.interactables.push({ type: 'monument', id: m.id, x: m.x, z: m.z, hex: m.hex, title: m.title, gem, read: false, autoOpened: false });
+    });
+
+    gameState.pos = { x: 0, y: 0.8, z: 0 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    updateHUDForMode('stage5');
+    showToast("📚", "Pustaka Ilmu Stres", "Dekati kesemua 6 tugu untuk membaca setiap bab pengurusan stres!");
+}
+
+// STAGE 6: ALTAR REFLEKSI DIRI
+function startStage6() {
+    clearWorldEntities();
+    gameState.mode = 'stage6';
+    gameState.stageProgress = gameState.completed[6] ? 1 : 0;
+    gameState.stageTarget = 1;
+    audio.setMode('zen');
+    updateSideInfoStage(6);
+
+    createStonePlatform(0, -0.25, 0, 16, 0.5, 16, 0x1c1917, gameState.stageObjects);
+
+    let floatingGem = { rotation: { y: 0 } };
+    if (useThreeJS) {
+        const altarGroup = new THREE.Group();
+        altarGroup.position.set(0, 0, -2.0);
+        const dais = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 0.5, 24), new THREE.MeshStandardMaterial({ color: 0x292524 }));
+        dais.position.y = 0.25;
+        const podium = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.4, 1.1), new THREE.MeshStandardMaterial({ color: 0x451a03, emissive: 0xd97706, emissiveIntensity: 0.3 }));
+        podium.position.y = 1.1;
+        floatingGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.75, 0), new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 1.1 }));
+        floatingGem.position.y = 2.6;
+        const aLbl = createFloatingLabel("✍️ ALTAR REFLEKSI", "Tekan E untuk Jurnal Stres", "#fbbf24");
+        aLbl.position.set(0, 4.2, 0);
+        altarGroup.add(dais, podium, floatingGem, aLbl);
+        scene.add(altarGroup);
+        gameState.stageObjects.push({ mesh: altarGroup });
+    }
+
+    gameState.interactables.push({ type: 'altar', x: 0, z: -2.0, gem: floatingGem, autoOpened: false });
+    gameState.pos = { x: 0, y: 0.8, z: 4.5 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+    updateHUDForMode('stage6');
+    showToast("✍️", "Altar Refleksi Diri", "Dekati Altar Keemasan untuk menulis jurnal pengurusan stres anda!");
+}
+
+// ============================================================================
+// 7. PHYSICS & GAME UPDATE LOOPS
+// ============================================================================
+function updateGame(dt, elapsed) {
+    if (!gameState.started) return;
+
+    if (useThreeJS) {
+        updateLavaTexture(elapsed);
+        gameState.particles.forEach(p => {
+            if (p.userData && p.userData.isEmbers) {
+                const posAttr = p.geometry.attributes.position;
+                for (let i = 0; i < posAttr.count; i++) {
+                    let y = posAttr.getY(i) + dt * 1.4;
+                    if (y > 14) y = 0;
+                    posAttr.setY(i, y);
+                }
+                posAttr.needsUpdate = true;
+            }
+        });
+
+        for (let i = gameState.explosions.length - 1; i >= 0; i--) {
+            const ex = gameState.explosions[i];
+            ex.age += dt;
+            const ratio = ex.age / ex.maxAge;
+            ex.mesh.scale.setScalar(1 + ratio * 3.5);
+            ex.mesh.material.opacity = Math.max(0, 1 - ratio);
+            if (ex.age >= ex.maxAge) {
+                scene.remove(ex.mesh);
+                gameState.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    if (gameState.shootCooldown > 0) gameState.shootCooldown -= dt;
+    if (gameState.invulnTimer > 0) gameState.invulnTimer -= dt;
+    if (gameState.weaponTimer > 0) {
+        gameState.weaponTimer -= dt;
+        if (gameState.weaponTimer <= 0) setWeaponMode('normal');
+    }
+
+    if (gameState.mode === 'stage3') {
+        updateStage3Platforms(dt, elapsed);
+    }
+
+    if (gameState.isGrounded && gameState.standingPlatform) {
+        gameState.pos.x += (gameState.standingPlatform.dx || 0);
+        gameState.pos.z += (gameState.standingPlatform.dz || 0);
+    }
+
+    let moveX = 0, moveZ = 0;
+    if (gameState.keys['KeyW'] || gameState.keys['ArrowUp'] || gameState.dpad.up) moveZ -= 1;
+    if (gameState.keys['KeyS'] || gameState.keys['ArrowDown'] || gameState.dpad.down) moveZ += 1;
+    if (gameState.keys['KeyA'] || gameState.keys['ArrowLeft'] || gameState.dpad.left) moveX -= 1;
+    if (gameState.keys['KeyD'] || gameState.keys['ArrowRight'] || gameState.dpad.right) moveX += 1;
+
+    const len = Math.hypot(moveX, moveZ);
+    const isMoving = len > 0;
+    if (isMoving) {
+        moveX /= len; moveZ /= len;
+        gameState.facingAngle = Math.atan2(moveX, moveZ);
+    }
+
+    const speed = 8.4;
+    const nextX = gameState.pos.x + moveX * speed * dt;
+    const nextZ = gameState.pos.z + moveZ * speed * dt;
+
+    let canMoveX = true, canMoveZ = true;
+    if (gameState.mode === 'stage4') {
+        gameState.stageObjects.forEach(obj => {
+            if (obj.isWall) {
+                const halfW = obj.w / 2 + 0.55;
+                const halfD = obj.d / 2 + 0.55;
+                if (Math.abs(nextX - obj.x) < halfW && Math.abs(gameState.pos.z - obj.z) < halfD) canMoveX = false;
+                if (Math.abs(gameState.pos.x - obj.x) < halfW && Math.abs(nextZ - obj.z) < halfD) canMoveZ = false;
+            }
+        });
+    }
+
+    if (canMoveX) gameState.pos.x = nextX;
+    if (canMoveZ) gameState.pos.z = nextZ;
+
+    gameState.vel.y -= 24 * dt;
+    gameState.pos.y += gameState.vel.y * dt;
+
+    const surface = getSurfaceAt(gameState.pos.x, gameState.pos.z);
+    if (surface !== null && gameState.pos.y <= surface.topY + 0.78 && gameState.vel.y <= 0) {
+        gameState.pos.y = surface.topY + 0.75;
+        gameState.vel.y = 0;
+        gameState.isGrounded = true;
+        gameState.standingPlatform = surface.platform;
+    } else {
+        gameState.isGrounded = false;
+        gameState.standingPlatform = null;
+    }
+
+    if (gameState.pos.y < -0.45) {
+        audio.playSFX('hit');
+        damageCasper(15, "🔥 Terjatuh ke lava! Teruskan langkah dengan tenang.");
+        respawnCasperInCurrentStage();
+    }
+
+    if (useThreeJS && playerGroup) {
+        const bobOffset = isMoving && gameState.isGrounded ? Math.abs(Math.sin(elapsed * 14)) * 0.08 : 0;
+        playerGroup.position.set(gameState.pos.x, gameState.pos.y + bobOffset, gameState.pos.z);
+        playerGroup.rotation.y = gameState.facingAngle;
+        playerRing.rotation.z += dt * 1.8;
+
+        if (leftLegMesh && rightLegMesh) {
+            const swing = isMoving ? Math.sin(elapsed * 14) * 0.55 : 0;
+            leftLegMesh.rotation.x = swing;
+            rightLegMesh.rotation.x = -swing;
+        }
+
+        if (wisdomGemMesh && gameState.hasWisdomGem) {
+            wisdomGemMesh.visible = true;
+            wisdomGemMesh.rotation.y += dt * 2.5;
+        }
+        playerGroup.visible = gameState.invulnTimer <= 0 || Math.floor(elapsed * 16) % 2 === 0;
+
+        camera.position.x += (gameState.pos.x - camera.position.x) * 0.12;
+        camera.position.y += (gameState.pos.y + 16.5 - camera.position.y) * 0.12;
+        camera.position.z += (gameState.pos.z + 14.5 - camera.position.z) * 0.12;
+        camera.lookAt(gameState.pos.x, gameState.pos.y + 0.5, gameState.pos.z - 1.0);
+    }
+
+    // Kapsul kuasa terbang gaya Contra
+    if (['stage1', 'stage2', 'stage4'].includes(gameState.mode)) {
+        gameState.powerupSpawnTimer -= dt;
+        if (gameState.powerupSpawnTimer <= 0 && gameState.powerups.length === 0) {
+            gameState.powerupSpawnTimer = 11;
+            spawnContraPowerupCapsule((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
+        }
+    }
+    for (let i = gameState.powerups.length - 1; i >= 0; i--) {
+        const pu = gameState.powerups[i];
+        pu.life -= dt;
+        if (useThreeJS && pu.pod) pu.pod.rotation.x += dt * 3;
+        const dist = Math.hypot(gameState.pos.x - pu.x, gameState.pos.z - pu.z);
+        if (dist < 1.35) {
+            audio.playSFX('powerup');
+            setWeaponMode(pu.kind);
+            showToast("🦅", pu.kind === 'spread' ? "Senjata [S] Spread Shot!" : "Senjata [L] Laser Pantas!", "Tembakan meriam tenaga dinaik taraf selama 18 saat!");
+            if (useThreeJS) scene.remove(pu.mesh);
+            gameState.powerups.splice(i, 1);
+        } else if (pu.life <= 0) {
+            if (useThreeJS) scene.remove(pu.mesh);
+            gameState.powerups.splice(i, 1);
+        }
+    }
+
+    if (gameState.mode === 'hub') updateHubLogic(dt);
+    else if (gameState.mode === 'stage1') updateStage1Logic(dt, elapsed);
+    else if (gameState.mode === 'stage2') updateStage2Logic(dt);
+    else if (gameState.mode === 'stage3') updateStage3Logic(dt);
+    else if (gameState.mode === 'stage4') updateStage4Logic(dt);
+    else if (gameState.mode === 'stage5') updateStage5Logic(dt);
+    else if (gameState.mode === 'stage6') updateStage6Logic(dt);
+
+    updateProjectiles(dt);
+}
+
+function getSurfaceAt(x, z) {
+    if (gameState.mode === 'hub') {
+        for (const p of gameState.hubPlatforms) {
+            if (Math.abs(x - p.x) <= p.w / 2 + 1.1 && Math.abs(z - p.z) <= p.d / 2 + 1.1) {
+                return { topY: p.topY, platform: p };
+            }
+        }
+        return null;
+    } else if (gameState.mode === 'stage1') {
+        return (Math.abs(x) <= 9.2 && Math.abs(z) <= 9.2) ? { topY: 0, platform: null } : null;
+    } else if (gameState.mode === 'stage2') {
+        return (Math.abs(x) <= 10.2 && Math.abs(z) <= 10.2) ? { topY: 0, platform: null } : null;
+    } else if (gameState.mode === 'stage3') {
+        for (const p of gameState.platforms) {
+            if (Math.abs(x - p.x) <= p.w / 2 + 0.55 && Math.abs(z - p.z) <= p.d / 2 + 0.55) {
+                return { topY: p.y + p.h / 2, platform: p };
+            }
+        }
+        return null;
+    } else if (gameState.mode === 'stage4') {
+        return (Math.abs(x) <= 12.2 && Math.abs(z) <= 12.2) ? { topY: 0, platform: null } : null;
+    } else if (gameState.mode === 'stage5') {
+        return (Math.abs(x) <= 11.2 && Math.abs(z) <= 11.2) ? { topY: 0, platform: null } : null;
+    } else if (gameState.mode === 'stage6') {
+        return (Math.abs(x) <= 8.2 && Math.abs(z) <= 8.2) ? { topY: 0, platform: null } : null;
+    }
+    return { topY: 0, platform: null };
+}
+
+function respawnCasperInCurrentStage() {
+    gameState.standingPlatform = null;
+    if (gameState.mode === 'hub') gameState.pos = { x: 0, y: 0.8, z: 2.5 };
+    else if (gameState.mode === 'stage1') gameState.pos = { x: 0, y: 0.8, z: 5 };
+    else if (gameState.mode === 'stage2') gameState.pos = { x: 0, y: 0.8, z: 6.5 };
+    else if (gameState.mode === 'stage3') gameState.pos = { x: 0, y: 0.8, z: 13.5 };
+    else if (gameState.mode === 'stage4') gameState.pos = { x: -2.5, y: 0.8, z: 9.2 };
+    else if (gameState.mode === 'stage5') gameState.pos = { x: 0, y: 0.8, z: 0 };
+    else if (gameState.mode === 'stage6') gameState.pos = { x: 0, y: 0.8, z: 4.5 };
+    gameState.vel = { x: 0, y: 0, z: 0 };
+}
+
+function updateHubLogic(dt) {
+    gameState.portals.forEach(portal => {
+        if (portal.torus && portal.torus.rotation) portal.torus.rotation.z += dt * 1.5;
+        const dist = Math.hypot(gameState.pos.x - portal.x, gameState.pos.z - portal.z);
+        if (dist < 1.9 && !portal.triggered) {
+            portal.triggered = true;
+            audio.playSFX('portal');
+            openStageIntroModal(portal.id);
+        } else if (dist > 2.7) {
+            portal.triggered = false;
+        }
+    });
+}
+
+function updateStage1Logic(dt, elapsed) {
+    stage1SpawnTimer -= dt;
+    if (stage1SpawnTimer <= 0) {
+        spawnStressMeteor();
+        stage1SpawnTimer = 1.1;
+    }
+
+    for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+        const e = gameState.enemies[i];
+        e.y += e.vy * dt;
+        if (useThreeJS) {
+            e.mesh.position.y = e.y;
+            if (e.core) e.core.rotation.x += dt * 3;
+            e.warnMesh.scale.setScalar(1 + Math.sin(elapsed * 15) * 0.12);
+        }
+        if (e.y <= 0.5) {
+            const dist = Math.hypot(gameState.pos.x - e.tx, gameState.pos.z - e.tz);
+            if (dist < 1.55) damageCasper(15, `💥 Terkena ${e.meteorInfo.label}! ${e.meteorInfo.desc}`);
+            spawnExplosion3D(e.tx, 0.6, e.tz, 0xef4444);
+            if (useThreeJS) { scene.remove(e.mesh); scene.remove(e.warnMesh); }
+            gameState.enemies.splice(i, 1);
+        }
+    }
+
+    for (let i = gameState.collectibles.length - 1; i >= 0; i--) {
+        const c = gameState.collectibles[i];
+        if (c.orb && c.orb.rotation) c.orb.rotation.y += dt * 2.5;
+        const dist = Math.hypot(gameState.pos.x - c.x, gameState.pos.z - c.z);
+        if (dist < 1.3) {
+            audio.playSFX('collect');
+            gameState.stageProgress++;
+            healCasper(10);
+            updateSubmeter(gameState.stageProgress, gameState.stageTarget);
+            showToast("🎨", `${c.data.name} (${gameState.stageProgress}/${gameState.stageTarget})`, c.data.info);
+            if (useThreeJS) scene.remove(c.mesh);
+            gameState.collectibles.splice(i, 1);
+
+            if (gameState.stageProgress >= gameState.stageTarget) completeStage(1);
+            else spawnAwarenessCrystal();
+        }
+    }
+}
+
+function updateStage2Logic(dt) {
+    const boss = gameState.boss;
+    if (!boss) return;
+
+    boss.moveAngle += dt * 1.3;
+    boss.x = Math.sin(boss.moveAngle) * 5.2;
+    if (useThreeJS) {
+        boss.mesh.position.x = boss.x;
+        boss.shield.rotation.z += dt * 2.2;
+        boss.torso.rotation.y -= dt * 0.8;
+    }
+
+    boss.attackTimer -= dt;
+    if (boss.attackTimer <= 0) {
+        boss.attackTimer = 1.65;
+        let dx = gameState.pos.x - boss.x;
+        let dz = gameState.pos.z - boss.z;
+        const len = Math.hypot(dx, dz) || 1;
+        dx /= len; dz /= len;
+
+        let atk = { position: { x: boss.x, y: 0.8, z: boss.z } };
+        if (useThreeJS) {
+            atk = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+            atk.position.set(boss.x, 0.8, boss.z);
+            scene.add(atk);
+        }
+        gameState.projectiles.push({ mesh: atk, x: boss.x, y: 0.8, z: boss.z, vx: dx * 10.5, vz: dz * 10.5, life: 2.5, fromPlayer: false });
+    }
+}
+
+function updateStage3Platforms(dt, elapsed) {
+    gameState.breathTimer = (gameState.breathTimer + dt) % 12;
+    const phase = gameState.breathTimer;
+    let breathText = "🌬️ FASA 1: TARIK NAFAS (4s)";
+    let secNum = Math.floor(phase % 4) + 1;
+    let pct = ((phase % 4) / 4) * 100;
+    let phaseIdx = 0;
+
+    if (phase >= 4 && phase < 8) {
+        breathText = "⏸️ FASA 2: TAHAN NAFAS (4s)";
+        phaseIdx = 1;
+    } else if (phase >= 8) {
+        breathText = "🍃 FASA 3: HEMBUS NAFAS (4s)";
+        phaseIdx = 2;
+    }
+
+    document.getElementById('side-sub-label').textContent = breathText;
+    const bigPhaseEl = document.getElementById('breath-phase-big');
+    const bigSecEl = document.getElementById('breath-sec-big');
+    const barEl = document.getElementById('breath-progress-bar');
+    if (bigPhaseEl) bigPhaseEl.textContent = breathText;
+    if (bigSecEl) bigSecEl.textContent = `${secNum}s / 4s`;
+    if (barEl) barEl.style.width = `${Math.max(12, pct)}%`;
+
+    gameState.platforms.forEach(p => {
+        const prevX = p.x;
+        const prevY = p.y;
+        const prevZ = p.z;
+
+        if (p.behavior === 'rise') {
+            p.y = p.baseY + (phaseIdx === 0 ? Math.sin((phase / 4) * Math.PI) * 0.65 : 0);
+        } else if (p.behavior === 'hold') {
+            p.x = phaseIdx === 1 ? p.baseX : p.baseX + Math.sin(elapsed * 1.6) * 1.1;
+        } else if (p.behavior === 'exhale') {
+            p.z = p.baseZ + (phaseIdx === 2 ? -Math.sin(((phase - 8) / 4) * Math.PI) * 1.1 : 0);
+        } else if (p.behavior === 'relax') {
+            p.x = p.baseX + Math.sin(elapsed * 1.2) * 1.2;
+        }
+
+        p.dx = p.x - prevX;
+        p.dy = p.y - prevY;
+        p.dz = p.z - prevZ;
+        p.topY = p.y + p.h / 2;
+
+        if (useThreeJS && p.mesh) {
+            p.mesh.position.set(p.x, p.y, p.z);
+        }
+    });
+}
+
+function updateStage3Logic(dt) {
+    gameState.platforms.forEach(p => {
+        if (!p.visited) {
+            const dist = Math.hypot(gameState.pos.x - p.x, gameState.pos.z - p.z);
+            if (dist < 2.4 && gameState.isGrounded) {
+                p.visited = true;
+                audio.playSFX('collect');
+                gameState.stageProgress++;
+                updateSubmeter(gameState.stageProgress, gameState.stageTarget);
+                const tip = STAGE_DATA[3].stepTips[Math.min(gameState.stageProgress - 1, STAGE_DATA[3].stepTips.length - 1)];
+                showToast("✨", p.tag, tip);
+            }
+        }
+    });
+
+    for (let i = gameState.collectibles.length - 1; i >= 0; i--) {
+        const c = gameState.collectibles[i];
+        if (c.mesh && c.mesh.rotation) c.mesh.rotation.y += dt * 2;
+        const dist = Math.hypot(gameState.pos.x - c.x, gameState.pos.z - c.z);
+        if (dist < 1.8) {
+            audio.playSFX('collect');
+            healCasper(25);
+            completeStage(3);
+            return;
+        }
+    }
+}
+
+function updateStage4Logic(dt) {
+    gameState.enemies.forEach(e => {
+        if (e.type === 'patrol') {
+            e.x += e.speed * e.dir * dt;
+            if (e.x > e.max) e.dir = -1;
+            if (e.x < e.min) e.dir = 1;
+            if (useThreeJS) e.mesh.position.x = e.x;
+
+            const dist = Math.hypot(gameState.pos.x - e.x, gameState.pos.z - e.z);
+            if (dist < 1.2) damageCasper(15, `⚠️ Terlanggar ${e.label}! Rapikan elemen mengikut zon.`);
+        }
+    });
+
+    gameState.keyMesh && !gameState.hasKey && (() => {
+        if (gameState.keyMesh.rotation) gameState.keyMesh.rotation.y += dt * 2.2;
+        const dist = Math.hypot(gameState.pos.x - (-8.5), gameState.pos.z - 8.2);
+        if (dist < 1.5) {
+            gameState.hasKey = true;
+            gameState.solutionStep = 1;
+            audio.playSFX('collect');
+            if (useThreeJS) scene.remove(gameState.keyMesh);
+            gameState.stageProgress = 1;
+            updateSubmeter(1, 5);
+            showToast("🗝️", "Kunci Tindakan Diperoleh!", "Menuju ke Zon 1: Kenal Pasti Masalah!");
+        }
+    })();
+
+    gameState.solutionZones.forEach(zone => {
+        const dist = Math.hypot(gameState.pos.x - zone.x, gameState.pos.z - zone.z);
+        if (dist < 1.8 && !zone.completed) {
+            if (!gameState.hasKey) showToast("🔒", "Ambil Kunci Dahulu!", "Dapatkan Kunci Tindakan di penjuru kiri bawah!");
+            else if (zone.step === gameState.solutionStep) {
+                zone.completed = true;
+                if (useThreeJS && zone.padMesh.material) zone.padMesh.material.emissiveIntensity = 1.2;
+                audio.playSFX('collect');
+                gameState.solutionStep++;
+                gameState.stageProgress++;
+                updateSubmeter(gameState.stageProgress, 5);
+                showToast("✅", zone.info.name, zone.info.info);
+            } else if (zone.step > gameState.solutionStep) showToast("⏳", "Ikut Urutan Langkah!", `Selesaikan Zon ${gameState.solutionStep} dahulu!`);
+        }
+    });
+
+    if (gameState.goalGate) {
+        const dist = Math.hypot(gameState.pos.x - 8.5, gameState.pos.z - (-9.0));
+        if (dist < 1.85) {
+            if (gameState.hasKey && gameState.solutionStep > 4) {
+                audio.playSFX('collect');
+                completeStage(4);
+            } else if (!gameState.hasKey) showToast("🔒", "Pintu Berkunci!", "Ambil Kunci Tindakan & lengkapkan Zon 1-4!");
+            else showToast("🔒", "Langkah Belum Lengkap!", `Lengkapkan Zon ${gameState.solutionStep} ke atas dahulu!`);
+        }
+    }
+}
+
+function updateStage5Logic(dt) {
+    gameState.interactables.forEach(item => {
+        if (item.type === 'monument') {
+            if (item.gem && item.gem.rotation) item.gem.rotation.y += dt * 2.0;
+            const dist = Math.hypot(gameState.pos.x - item.x, gameState.pos.z - item.z);
+            if (dist < 2.25 && !item.autoOpened) {
+                item.autoOpened = true;
+                if (!item.read) {
+                    item.read = true;
+                    gameState.stageProgress++;
+                    updateSubmeter(gameState.stageProgress, 6);
+                    audio.playSFX('collect');
+                }
+                openCodexFocused(item.id);
+                if (gameState.stageProgress >= 6 && !gameState.completed[5]) {
+                    gameState.completed[5] = true;
+                    document.getElementById('pill-5').className = "px-2 py-0.5 rounded-xl text-[10px] font-extrabold bg-emerald-500/25 border border-emerald-400 text-emerald-300";
+                    document.getElementById('pill-5').textContent = "✅ 5";
+                    showToast("📚", "Pustaka Ilmu Selesai!", "Kesemua 6 tugu nota pengurusan stres telah dibaca.");
+                    checkAllSixPortalsVictory();
+                }
+            } else if (dist > 3.1) item.autoOpened = false;
+        }
+    });
+}
+
+function updateStage6Logic(dt) {
+    gameState.interactables.forEach(item => {
+        if (item.type === 'altar') {
+            if (item.gem && item.gem.rotation) item.gem.rotation.y += dt * 2.2;
+            const dist = Math.hypot(gameState.pos.x - item.x, gameState.pos.z - item.z);
+            if (dist < 2.5 && !item.autoOpened) {
+                item.autoOpened = true;
+                openReflectionModal();
+            } else if (dist > 3.4) item.autoOpened = false;
+        }
+    });
+}
+
+function updateProjectiles(dt) {
+    for (let i = gameState.projectiles.length - 1; i >= 0; i--) {
+        const p = gameState.projectiles[i];
+        p.x += p.vx * dt;
+        p.z += p.vz * dt;
+        p.life -= dt;
+        if (useThreeJS && p.mesh) p.mesh.position.set(p.x, p.y, p.z);
+
+        let removeBolt = p.life <= 0;
+        if (p.fromPlayer) {
+            if (gameState.mode === 'stage2' && gameState.boss) {
+                const dist = Math.hypot(p.x - gameState.boss.x, p.z - gameState.boss.z);
+                if (dist < 1.95) {
+                    removeBolt = true;
+                    audio.playSFX('collect');
+                    spawnExplosion3D(p.x, p.y, p.z, 0x38bdf8);
+                    const phaseInfo = STAGE_DATA[2].bossPhases[Math.min(gameState.stageProgress, STAGE_DATA[2].bossPhases.length - 1)];
+                    gameState.stageProgress++;
+                    updateSubmeter(gameState.stageProgress, gameState.stageTarget);
+                    updateBossPhaseLabel(gameState.stageProgress);
+                    showToast("💥", `Tembakan Mengena (${gameState.stageProgress}/${gameState.stageTarget})`, phaseInfo.info);
+
+                    if (useThreeJS && gameState.boss.mesh) {
+                        gameState.boss.mesh.scale.setScalar(1.25);
+                        setTimeout(() => { if (gameState.boss && gameState.boss.mesh) gameState.boss.mesh.scale.setScalar(1); }, 120);
+                    }
+                    if (gameState.stageProgress >= gameState.stageTarget) { completeStage(2); return; }
+                }
+            }
+
+            // Tembakan boleh memusnahkan meteor / peronda
+            for (let j = gameState.enemies.length - 1; j >= 0; j--) {
+                const e = gameState.enemies[j];
+                const ex = e.type === 'meteor' ? e.tx : e.x;
+                const ez = e.type === 'meteor' ? e.tz : e.z;
+                const ey = e.type === 'meteor' ? e.y : 1.0;
+                if (Math.hypot(p.x - ex, p.z - ez) < 1.4 && Math.abs(p.y - ey) < 2.2) {
+                    removeBolt = true;
+                    audio.playSFX('collect');
+                    spawnExplosion3D(ex, ey, ez, 0xfbbf24);
+                    if (useThreeJS) {
+                        scene.remove(e.mesh);
+                        if (e.warnMesh) scene.remove(e.warnMesh);
+                    }
+                    gameState.enemies.splice(j, 1);
+                    break;
+                }
+            }
+        } else {
+            const dist = Math.hypot(p.x - gameState.pos.x, p.z - gameState.pos.z);
+            if (dist < 1.1) {
+                removeBolt = true;
+                damageCasper(15, "🔥 Gelombang Serabut mengenai wira anda!");
+            }
+        }
+        if (removeBolt) {
+            if (useThreeJS && p.mesh) scene.remove(p.mesh);
+            gameState.projectiles.splice(i, 1);
+        }
+    }
+}
+
+// ============================================================================
+// 8. 2.5D ISOMETRIC FALLBACK RENDERER
+// ============================================================================
+function renderFallback2D() {
+    if (!fallbackCtx || !fallbackCanvas) return;
+    const ctx = fallbackCtx;
+    const w = fallbackCanvas.width;
+    const h = fallbackCanvas.height;
+
+    const grad = ctx.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, Math.max(w, h) * 0.7);
+    grad.addColorStop(0, '#7c2d12');
+    grad.addColorStop(0.5, '#450a0a');
+    grad.addColorStop(1, '#050204');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    const scale = Math.min(w, h) / 28;
+    const toScreen = (wx, wz) => ({
+        sx: w / 2 + (wx - gameState.pos.x) * scale,
+        sy: h / 2 + (wz - gameState.pos.z) * scale
+    });
+
+    const plats = gameState.mode === 'hub' ? gameState.hubPlatforms :
+                  gameState.mode === 'stage3' ? gameState.platforms : gameState.stageObjects;
+    plats.forEach(p => {
+        if (!p || typeof p.w !== 'number') return;
+        const topLeft = toScreen(p.x - p.w / 2, p.z - p.d / 2);
+        ctx.fillStyle = p.isWall ? '#4c1d95' : (p.isGoal ? '#065f46' : '#1e1b2e');
+        ctx.strokeStyle = p.isGoal ? '#34d399' : '#ea580c';
+        ctx.lineWidth = 2;
+        ctx.fillRect(topLeft.sx, topLeft.sy, p.w * scale, p.d * scale);
+        ctx.strokeRect(topLeft.sx, topLeft.sy, p.w * scale, p.d * scale);
+    });
+
+    if (gameState.mode === 'hub') {
+        gameState.portals.forEach(pt => {
+            const pos = toScreen(pt.x, pt.z);
+            ctx.beginPath();
+            ctx.arc(pos.sx, pos.sy, 1.3 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = pt.hex + '44';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = pt.hex;
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(pt.title, pos.sx, pos.sy - 1.5 * scale);
+        });
+    }
+
+    const cPos = toScreen(gameState.pos.x, gameState.pos.z);
+    const jumpLift = Math.max(0, (gameState.pos.y - 0.75) * 14);
+    ctx.beginPath();
+    ctx.arc(cPos.sx, cPos.sy - jumpLift, 0.65 * scale, 0, Math.PI * 2);
+    ctx.fillStyle = gameState.gender === 'female' ? '#f472b6' : '#38bdf8';
+    ctx.fill();
+}
+
+// ============================================================================
+// 9. UI & MODAL MANAGEMENT
+// ============================================================================
+function damageCasper(amount, msg) {
+    if (gameState.invulnTimer > 0) return;
+    gameState.invulnTimer = 1.1;
+    audio.playSFX('hit');
+    gameState.calmness = Math.max(20, gameState.calmness - amount);
+    document.getElementById('calm-bar').style.width = `${gameState.calmness}%`;
+    document.getElementById('calm-text').textContent = `${gameState.calmness}%`;
+    if (msg) showToast("⚠️", "Perhatian Reka Bentuk", msg);
+}
+
+function healCasper(amount) {
+    gameState.calmness = Math.min(100, gameState.calmness + amount);
+    document.getElementById('calm-bar').style.width = `${gameState.calmness}%`;
+    document.getElementById('calm-text').textContent = `${gameState.calmness}%`;
+}
+
+const PILL_SHORT = { 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6" };
+function completeStage(stageId) {
+    gameState.completed[stageId] = true;
+    audio.playSFX('portal');
+    healCasper(30);
+
+    const pill = document.getElementById(`pill-${stageId}`);
+    if (pill) {
+        pill.className = "px-2 py-0.5 rounded-xl text-[10px] font-extrabold bg-emerald-500/25 border border-emerald-400 text-emerald-300";
+        pill.textContent = `✅ ${PILL_SHORT[stageId]}`;
+    }
+
+    showToast("🎉", `Pintu ${stageId} Selesai!`, `Tahniah! Cabaran "${STAGE_DATA[stageId].title}" berjaya diselesaikan.`);
+
+    setTimeout(() => {
+        buildHubWorld();
+        focusGameCanvas();
+        checkAllSixPortalsVictory();
+    }, 1400);
+}
+
+function checkAllSixPortalsVictory() {
+    if (Object.values(gameState.completed).every(Boolean) && !gameState.victoryShown) {
+        gameState.victoryShown = true;
+        audio.setMode('zen');
+        audio.playVictoryFanfare();
+        document.getElementById('victory-modal').classList.remove('hidden');
+    }
+}
+
+function updateHUDForMode(mode) {
+    const zoneBadge = document.getElementById('zone-badge');
+    const exitBtn = document.getElementById('btn-exit-stage');
+
+    if (mode === 'hub') {
+        zoneBadge.textContent = "Hab Lembah Tekanan";
+        exitBtn.classList.add('hidden');
+    } else {
+        const data = STAGE_DATA[mode.replace('stage', '')];
+        zoneBadge.textContent = data.title;
+        exitBtn.classList.remove('hidden');
+        updateSubmeter(gameState.stageProgress, gameState.stageTarget);
+    }
+}
+
+function updateSubmeter(val, max) {
+    document.getElementById('side-sub-val').textContent = `${val} / ${max}`;
+}
+
+let toastTimeout = null;
+function showToast(icon, title, body) {
+    const box = document.getElementById('toast-knowledge');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-title').textContent = title;
+    document.getElementById('toast-body').textContent = body;
+    box.classList.remove('hidden');
+
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => box.classList.add('hidden'), 6500);
+}
+
+function openStageIntroModal(stageId) {
+    gameState.pendingStage = stageId;
+    const data = STAGE_DATA[stageId];
+    document.getElementById('modal-stage-tag').textContent = data.tag;
+    document.getElementById('modal-stage-emoji').textContent = data.emoji;
+    document.getElementById('modal-stage-title').textContent = data.title;
+    document.getElementById('modal-stage-lesson').textContent = data.lesson;
+    document.getElementById('modal-stage-mission').textContent = data.mission;
+    document.getElementById('stage-intro-modal').classList.remove('hidden');
+}
+
+function openCodexFocused(topicId = null) {
+    document.getElementById('codex-modal').classList.remove('hidden');
+    [1, 2, 3, 4, 5, 6].forEach(id => {
+        const card = document.getElementById(`codex-card-${id}`);
+        if (!card) return;
+        if (topicId === id) {
+            card.classList.add('ring-2', 'ring-cyan-400', 'bg-slate-800');
+            setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        } else {
+            card.classList.remove('ring-2', 'ring-cyan-400', 'bg-slate-800');
+        }
+    });
+}
+
+const REFLECTION_STORAGE_KEY = 'casper_stress_reflections_v1';
+function loadSavedReflections() {
+    try {
+        const raw = localStorage.getItem(REFLECTION_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+}
+
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function renderSavedReflections() {
+    const list = loadSavedReflections();
+    const container = document.getElementById('saved-reflections-list');
+    document.getElementById('saved-ref-count').textContent = `${list.length} catatan`;
+
+    if (list.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 italic">Belum ada catatan refleksi disimpan.</div>`;
+        return;
+    }
+
+    container.innerHTML = list.map((item, idx) => `
+        <div class="bg-slate-900/90 border border-amber-500/25 rounded-xl p-2.5 text-xs space-y-1">
+            <div class="flex justify-between text-[10px] text-amber-300 font-bold">
+                <span>💎 Catatan Refleksi #${list.length - idx}</span>
+                <span class="text-slate-400 font-normal">${item.date}</span>
+            </div>
+            <div><span class="text-red-300">Tanda Stres:</span> ${escapeHTML(item.signs)}</div>
+            <div><span class="text-orange-300">Punca:</span> ${escapeHTML(item.causes)}</div>
+            <div><span class="text-emerald-300">Teknik Tenang:</span> ${escapeHTML(item.relax)}</div>
+            <div><span class="text-purple-300">Pelan Tindakan:</span> ${escapeHTML(item.plan)}</div>
+        </div>
+    `).join('');
+}
+
+function openReflectionModal() {
+    document.getElementById('reflection-feedback').textContent = '';
+    renderSavedReflections();
+    document.getElementById('reflection-modal').classList.remove('hidden');
+}
+
+function triggerNearbyInteraction() {
+    if (gameState.mode === 'stage5') {
+        let nearest = null;
+        let minD = 3.2;
+        gameState.interactables.forEach(item => {
+            if (item.type === 'monument') {
+                const d = Math.hypot(gameState.pos.x - item.x, gameState.pos.z - item.z);
+                if (d < minD) { minD = d; nearest = item; }
+            }
+        });
+        if (nearest) {
+            if (!nearest.read) {
+                nearest.read = true;
+                gameState.stageProgress++;
+                updateSubmeter(gameState.stageProgress, 6);
+                audio.playSFX('collect');
+            }
+            openCodexFocused(nearest.id);
+        } else openCodexFocused(null);
+    } else if (gameState.mode === 'stage6') openReflectionModal();
+    else openCodexFocused(null);
+}
+
+// ============================================================================
+// 10. CONTROLS & EVENT LISTENERS
+// ============================================================================
+function selectPlayerGender(gender) {
+    gameState.gender = gender;
+    const isFemale = gender === 'female';
+
+    const btnMale = document.getElementById('btn-select-male');
+    const btnFemale = document.getElementById('btn-select-female');
+    if (btnMale && btnFemale) {
+        if (isFemale) {
+            btnMale.className = "p-3 rounded-2xl bg-slate-900/85 border-2 border-slate-700 hover:border-sky-400/70 text-left flex items-center gap-3 transition cursor-pointer";
+            btnFemale.className = "p-3 rounded-2xl bg-pink-500/25 border-2 border-pink-400 text-left flex items-center gap-3 transition cursor-pointer shadow-[0_0_20px_rgba(244,114,182,0.3)]";
+        } else {
+            btnMale.className = "p-3 rounded-2xl bg-sky-500/25 border-2 border-sky-400 text-left flex items-center gap-3 transition cursor-pointer shadow-[0_0_20px_rgba(56,189,248,0.3)]";
+            btnFemale.className = "p-3 rounded-2xl bg-slate-900/85 border-2 border-slate-700 hover:border-pink-400/70 text-left flex items-center gap-3 transition cursor-pointer";
+        }
+    }
+
+    document.getElementById('hud-avatar-icon').textContent = isFemale ? '👧' : '👦';
+    document.getElementById('hud-player-name').textContent = isFemale ? 'WIRA PEREMPUAN' : 'WIRA LELAKI';
+    document.getElementById('dpad-center-icon').textContent = isFemale ? '👧' : '👦';
+
+    if (useThreeJS) createHumanPlayer3D(gender);
+}
+
+function setupControls() {
+    window.addEventListener('keydown', e => {
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+        gameState.keys[e.code] = true;
+
+        if (e.code === 'Space' && gameState.isGrounded && gameState.started) {
+            gameState.vel.y = 11.4;
+            gameState.isGrounded = false;
+            gameState.standingPlatform = null;
+            audio.playSFX('jump');
+        }
+        if (e.code === 'KeyF' && gameState.started) fireContraBolt();
+        if (e.code === 'KeyE' && gameState.started) {
+            if (gameState.mode === 'stage5' || gameState.mode === 'stage6') triggerNearbyInteraction();
+            else fireContraBolt();
+        }
+    });
+
+    window.addEventListener('keyup', e => { gameState.keys[e.code] = false; });
+
+    // Buka kunci muzik lobi rancak pada interaksi pertama
+    const unlockLobbyAudio = () => {
+        if (audio.enabled) {
+            audio.init();
+            if (!audio.isPlayingMusic) audio.startMusic();
+        }
+    };
+    window.addEventListener('pointerdown', unlockLobbyAudio, { once: true });
+    window.addEventListener('keydown', unlockLobbyAudio, { once: true });
+
+    document.getElementById('btn-select-male').addEventListener('click', () => {
+        unlockLobbyAudio();
+        selectPlayerGender('male');
+    });
+    document.getElementById('btn-select-female').addEventListener('click', () => {
+        unlockLobbyAudio();
+        selectPlayerGender('female');
+    });
+
+    const syncAudioUI = (isOn) => {
+        document.getElementById('audio-icon').textContent = isOn ? '🔊' : '🔇';
+        document.getElementById('lobby-audio-icon').textContent = isOn ? '🔊' : '🔇';
+        document.getElementById('lobby-audio-label').textContent = isOn ? 'Muzik Tema Rancak: AKTIF' : 'Muzik Tema Rancak: SENYAP';
+    };
+
+    document.getElementById('btn-lobby-audio').addEventListener('click', () => {
+        const isOn = audio.toggle();
+        syncAudioUI(isOn);
+    });
+
+    const container = document.getElementById('game-container');
+    container.addEventListener('pointerdown', () => {
+        focusGameCanvas();
+        const anyModalOpen = !document.getElementById('stage-intro-modal').classList.contains('hidden') ||
+                             !document.getElementById('codex-modal').classList.contains('hidden') ||
+                             !document.getElementById('reflection-modal').classList.contains('hidden');
+        if (gameState.started && !anyModalOpen) fireContraBolt();
+    });
+
+    document.getElementById('btn-start-game').addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('hud-top').classList.remove('hidden');
+        document.getElementById('virtual-pad').classList.remove('hidden');
+        gameState.started = true;
+        audio.init();
+        audio.setMode('lava');
+        if (!audio.isPlayingMusic && audio.enabled) audio.startMusic();
+        focusGameCanvas();
+        showToast("🔫", "Pengembaraan 3. Bijak Mengurus Stres Bermula!", "Terokai kesemua 6 pintu cabaran untuk menguasai pengurusan stres!");
+    });
+
+    document.getElementById('btn-toggle-pad').addEventListener('click', () => {
+        document.getElementById('virtual-pad').classList.toggle('hidden');
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-side-read-more').addEventListener('click', () => {
+        const id = gameState.mode.startsWith('stage') ? parseInt(gameState.mode.replace('stage', ''), 10) : null;
+        openCodexFocused(id);
+    });
+
+    document.querySelectorAll('[data-dir]').forEach(btn => {
+        const dir = btn.getAttribute('data-dir');
+        const setDir = (val) => {
+            gameState.dpad[dir] = val;
+            if (val) btn.classList.add('active');
+            else btn.classList.remove('active');
+        };
+        btn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setDir(true); focusGameCanvas(); });
+        btn.addEventListener('pointerup', e => { e.preventDefault(); setDir(false); });
+        btn.addEventListener('pointerleave', () => setDir(false));
+        btn.addEventListener('pointercancel', () => setDir(false));
+    });
+
+    document.getElementById('btn-pad-jump').addEventListener('pointerdown', e => {
+        e.preventDefault(); e.stopPropagation();
+        if (gameState.isGrounded && gameState.started) {
+            gameState.vel.y = 11.4;
+            gameState.isGrounded = false;
+            gameState.standingPlatform = null;
+            audio.playSFX('jump');
+        }
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-pad-shoot').addEventListener('pointerdown', e => {
+        e.preventDefault(); e.stopPropagation();
+        if (gameState.started) fireContraBolt();
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-pad-interact').addEventListener('pointerdown', e => {
+        e.preventDefault(); e.stopPropagation();
+        if (gameState.started) triggerNearbyInteraction();
+    });
+
+    document.getElementById('btn-cancel-stage').addEventListener('click', () => {
+        document.getElementById('stage-intro-modal').classList.add('hidden');
+        gameState.pos = { x: 0, y: 0.8, z: 2.5 };
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-enter-stage').addEventListener('click', () => {
+        document.getElementById('stage-intro-modal').classList.add('hidden');
+        const id = gameState.pendingStage;
+        if (id === 1) startStage1();
+        else if (id === 2) startStage2();
+        else if (id === 3) startStage3();
+        else if (id === 4) startStage4();
+        else if (id === 5) startStage5();
+        else if (id === 6) startStage6();
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-exit-stage').addEventListener('click', () => {
+        buildHubWorld();
+        focusGameCanvas();
+        showToast("🚪", "Kembali ke Hab Lembah Tekanan", "Pilih pintu cabaran seterusnya!");
+    });
+
+    document.getElementById('btn-audio').addEventListener('click', () => {
+        const isOn = audio.toggle();
+        syncAudioUI(isOn);
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-codex').addEventListener('click', () => openCodexFocused(null));
+    document.getElementById('btn-close-codex').addEventListener('click', () => {
+        document.getElementById('codex-modal').classList.add('hidden');
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-close-reflection').addEventListener('click', () => {
+        document.getElementById('reflection-modal').classList.add('hidden');
+        focusGameCanvas();
+    });
+
+    document.getElementById('btn-save-reflection').addEventListener('click', () => {
+        const signs = document.getElementById('ref-signs').value.trim();
+        const causes = document.getElementById('ref-causes').value.trim();
+        const relax = document.getElementById('ref-relax').value.trim();
+        const plan = document.getElementById('ref-plan').value.trim();
+        const fb = document.getElementById('reflection-feedback');
+
+        if (!signs || !causes || !relax || !plan) {
+            fb.className = "text-xs sm:text-sm font-bold text-rose-400";
+            fb.textContent = "⚠️ Sila lengkapkan kesemua 4 ruangan refleksi diri.";
+            return;
+        }
+
+        const existing = loadSavedReflections();
+        const nowStr = new Date().toLocaleString('ms-MY', { dateStyle: 'medium', timeStyle: 'short' });
+        existing.unshift({ signs, causes, relax, plan, date: nowStr });
+        try { localStorage.setItem(REFLECTION_STORAGE_KEY, JSON.stringify(existing)); } catch (e) {}
+
+        document.getElementById('ref-signs').value = '';
+        document.getElementById('ref-causes').value = '';
+        document.getElementById('ref-relax').value = '';
+        document.getElementById('ref-plan').value = '';
+
+        fb.className = "text-xs sm:text-sm font-bold text-emerald-400";
+        fb.textContent = "💎 Jurnal disimpan! Permata Kebijaksanaan dianugerahkan!";
+        renderSavedReflections();
+
+        gameState.hasWisdomGem = true;
+        gameState.completed[6] = true;
+        gameState.stageProgress = 1;
+        updateSubmeter(1, 1);
+        healCasper(30);
+        audio.playSFX('collect');
+
+        document.getElementById('pill-6').className = "px-2 py-0.5 rounded-xl text-[10px] font-extrabold bg-emerald-500/25 border border-emerald-400 text-emerald-300";
+        document.getElementById('pill-6').textContent = "✅ 6";
+
+        showToast("💎", "Permata Kebijaksanaan Diperoleh!", "Jurnal refleksi pengurusan stres berjaya disimpan!");
+        checkAllSixPortalsVictory();
+    });
+
+    document.getElementById('btn-replay-fanfare').addEventListener('click', () => {
+        audio.playVictoryFanfare();
+    });
+
+    document.getElementById('btn-play-again').addEventListener('click', () => {
+        document.getElementById('victory-modal').classList.add('hidden');
+        focusGameCanvas();
+    });
+}
+
+function onWindowResize() {
+    if (useThreeJS && camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    } else if (fallbackCanvas) {
+        fallbackCanvas.width = window.innerWidth;
+        fallbackCanvas.height = window.innerHeight;
+    }
+}
+
+// ============================================================================
+// 11. MAIN ANIMATION LOOP
+// ============================================================================
+function animate(now) {
+    requestAnimationFrame(animate);
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+    totalElapsed += dt;
+
+    updateGame(dt, totalElapsed);
+
+    if (useThreeJS && renderer && scene && camera) {
+        renderer.render(scene, camera);
+    } else {
+        renderFallback2D();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initEngine();
+        setupControls();
+        audio.startMusic();
+        requestAnimationFrame(animate);
+    });
+} else {
+    initEngine();
+    setupControls();
+    audio.startMusic();
+    requestAnimationFrame(animate);
+}
+</script>
+</body>
+</html>
